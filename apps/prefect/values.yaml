@@ -4,6 +4,11 @@ postgresql:
     username: prefect
     database: prefect
     password: "your-postgres-password"
+  primary:
+    persistence:
+      enabled: true
+      storageClass: csi-rbd-sc
+      size: 1Gi
 
 server:
   env:
