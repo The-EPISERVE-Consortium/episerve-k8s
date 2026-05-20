@@ -1,0 +1,22 @@
+postgresql:
+  enabled: true
+  auth:
+    username: prefect
+    database: prefect
+    existingSecret: prefect-postgresql-credentials
+    secretKeys:
+      userPasswordKey: password
+
+server:
+  ingress:
+    enabled: true
+    className: nginx
+    host:
+      hostname: prefect.medicalbioinformatics.de
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/whitelist-source-range: "130.73.0.0/16"
+    tls:
+      enabled: true
+      secretName: prefect-tls
+      
