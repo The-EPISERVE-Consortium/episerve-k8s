@@ -1,14 +1,14 @@
-server:
-  env:
-    - name: PREFECT_UI_API_URL
-      value: "https://prefect.medicalbioinformatics.de/api"
-
 postgresql:
   enabled: true
   auth:
     username: prefect
     database: prefect
-    existingSecret: prefect-db-credentials
+    password: "your-postgres-password"
+
+server:
+  env:
+    - name: PREFECT_UI_API_URL
+      value: "https://prefect.medicalbioinformatics.de/api"
 
 ingress:
   enabled: true
@@ -21,3 +21,4 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/whitelist-source-range: "130.73.0.0/16"
   tls: true
+  
