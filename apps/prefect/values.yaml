@@ -8,7 +8,7 @@ postgresql:
   auth:
     username: prefect
     database: prefect
-    existingSecret: prefect-postgresql-credentials
+    existingSecret: prefect-db-credentials
 
 ingress:
   enabled: true
