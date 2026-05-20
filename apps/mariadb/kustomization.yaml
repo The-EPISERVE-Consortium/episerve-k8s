@@ -5,7 +5,7 @@ resources:
 helmCharts:
   - name: mariadb
     repo: https://charts.bitnami.com/bitnami
-    version: "20.5.1"
+    version: "25.1.2"
     releaseName: mariadb
     namespace: default
     valuesFile: values.yaml
