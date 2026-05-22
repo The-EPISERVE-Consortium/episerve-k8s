@@ -1,0 +1,26 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: argocd-listeners
+  namespace: argocd
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  parentRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: shared-internal-gateway
+    namespace: kgateway-system
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: argo.medicalbioinformatics.de
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: argocd-tls
+            kind: Secret

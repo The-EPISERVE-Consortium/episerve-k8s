@@ -4,4 +4,6 @@ resources:
   - sealed-secrets
   - cert-manager
   - argocd-ingress
+  - argocd-gateway
+
   
