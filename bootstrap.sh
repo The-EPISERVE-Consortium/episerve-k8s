@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 GITHUB_REPO="https://github.com/The-EPISERVE-Consortium/episerve-k8s"
 GITHUB_USER=""
 GITHUB_TOKEN=""
@@ -18,12 +17,22 @@ kubectl wait --for=condition=ready pod \
     -l app.kubernetes.io/name=argocd-server \
     -n argocd --timeout=120s
 
+echo "==> Configuring ArgoCD server for Gateway API (TLS terminated at gateway)"
+kubectl patch configmap argocd-cmd-params-cm -n argocd \
+    --patch '{"data": {"server.insecure": "true"}}'
+kubectl rollout restart deployment argocd-server -n argocd
+kubectl rollout status deployment argocd-server -n argocd
+
+echo "==> Restoring Sealed Secrets master key"
+echo "    Copy sealed-secrets-master-key.yaml from Bitwarden and run:"
+echo "    kubectl apply -f sealed-secrets-master-key.yaml"
+echo "    kubectl rollout restart deployment sealed-secrets -n kube-system"
+echo ""
 echo "==> ArgoCD is ready"
 echo ""
 echo "Next steps (manual):"
-echo "  1. Port-forward: kubectl port-forward svc/argocd-server -n argocd 8080:443"
+echo "  1. Open https://argo.medicalbioinformatics.de and log in"
 echo "  2. Get password: kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d"
-echo "  3. Open https://localhost:8080 and log in"
-echo "  4. Settings → Repositories → Connect Repo: $GITHUB_REPO"
-echo "  5. Create Application: infrastructure → path: infrastructure"
-echo "  6. Create Application: apps → path: apps"
+echo "  3. Settings → Repositories → Connect Repo: $GITHUB_REPO"
+echo "  4. Create Application: infrastructure → path: infrastructure"
+echo "  5. Apply ApplicationSet: kubectl apply -f applicationset.yaml -n argocd"
