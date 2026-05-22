@@ -4,9 +4,3 @@ namespace: argocd
 resources:
   - listenerset.yaml
   - httproute.yaml
-patches:
-  - path: argocd-server-patch.yaml
-    target:
-      kind: Deployment
-      name: argocd-server
-      namespace: argocd
