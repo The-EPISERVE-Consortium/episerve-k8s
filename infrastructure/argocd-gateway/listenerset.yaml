@@ -22,5 +22,5 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: argocd-tls
+          - name: argo-tls
             kind: Secret
