@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: argocd
 resources:
   - ../base/gateway
+  - trafficpolicy.yaml
 replacements:
   - source:
       kind: ConfigMap
