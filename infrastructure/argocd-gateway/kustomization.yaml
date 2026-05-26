@@ -5,4 +5,5 @@ resources:
   - listenerset.yaml
   - listenerset-acme.yaml
   - httproute.yaml
+  - certificate.yaml
 
