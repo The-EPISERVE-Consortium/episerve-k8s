@@ -10,5 +10,9 @@ spec:
       name: letsencrypt-prod
     solvers:
       - http01:
-          ingress:
-            class: nginx
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: argocd-acme-listeners
+                namespace: argocd
+                kind: ListenerSet
+                group: gateway.networking.k8s.io

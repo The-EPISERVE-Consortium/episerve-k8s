@@ -3,4 +3,6 @@ kind: Kustomization
 namespace: argocd
 resources:
   - listenerset.yaml
+  - listenerset-acme.yaml
   - httproute.yaml
+
