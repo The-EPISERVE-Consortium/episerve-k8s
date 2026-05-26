@@ -7,7 +7,7 @@ spec:
   parentRef:
     kind: Gateway
     group: gateway.networking.k8s.io
-    name: shared-internal-gateway
+    name: shared-public-gateway
     namespace: kgateway-system
   listeners:
     - allowedRoutes:
