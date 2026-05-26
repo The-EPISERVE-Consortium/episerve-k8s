@@ -1,11 +1,79 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: argocd
+namePrefix: argocd-
 resources:
-  - listenerset.yaml
-  - listenerset-acme.yaml
-  - httproute.yaml
-  - certificate.yaml
-  - referencegrant.yaml
-  
-
+  - ../../base/gateway
+replacements:
+  - source:
+      kind: ConfigMap
+      name: argocd-gateway-config
+      fieldPath: data.hostname
+    targets:
+      - select:
+          kind: ListenerSet
+          name: argocd-gateway-listeners
+        fieldPaths:
+          - spec.listeners.0.hostname
+      - select:
+          kind: ListenerSet
+          name: argocd-gateway-acme-listeners
+        fieldPaths:
+          - spec.listeners.0.hostname
+      - select:
+          kind: HTTPRoute
+          name: argocd-gateway-route
+        fieldPaths:
+          - spec.hostnames.0
+      - select:
+          kind: Certificate
+          name: argocd-gateway-tls
+        fieldPaths:
+          - spec.dnsNames.0
+  - source:
+      kind: ConfigMap
+      name: argocd-gateway-config
+      fieldPath: data.secretName
+    targets:
+      - select:
+          kind: ListenerSet
+          name: argocd-gateway-listeners
+        fieldPaths:
+          - spec.listeners.0.tls.certificateRefs.0.name
+      - select:
+          kind: Certificate
+          name: argocd-gateway-tls
+        fieldPaths:
+          - spec.secretName
+      - select:
+          kind: ReferenceGrant
+          name: argocd-gateway-tls-grant
+        fieldPaths:
+          - spec.to.0.name
+  - source:
+      kind: ConfigMap
+      name: argocd-gateway-config
+      fieldPath: data.serviceName
+    targets:
+      - select:
+          kind: HTTPRoute
+          name: argocd-gateway-route
+        fieldPaths:
+          - spec.rules.0.backendRefs.0.name
+  - source:
+      kind: ConfigMap
+      name: argocd-gateway-config
+      fieldPath: data.servicePort
+    targets:
+      - select:
+          kind: HTTPRoute
+          name: argocd-gateway-route
+        fieldPaths:
+          - spec.rules.0.backendRefs.0.port
+configMapGenerator:
+  - name: argocd-gateway-config
+    literals:
+      - hostname=argok8.medicalbioinformatics.de
+      - secretName=argo-tls
+      - serviceName=argocd-server
+      - servicePort=80

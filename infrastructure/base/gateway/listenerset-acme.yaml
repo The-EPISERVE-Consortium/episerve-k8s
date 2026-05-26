@@ -1,8 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: ListenerSet
 metadata:
-  name: argocd-listeners
-  namespace: argocd
+  name: gateway-acme-listeners
 spec:
   parentRef:
     kind: Gateway
@@ -13,12 +12,7 @@ spec:
     - allowedRoutes:
         namespaces:
           from: Same
-      hostname: argok8.medicalbioinformatics.de
-      name: https
-      port: 443
-      protocol: HTTPS
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: argo-tls
-            kind: Secret
+      hostname: GATEWAY_HOSTNAME
+      name: http
+      port: 80
+      protocol: HTTP
