@@ -10,7 +10,7 @@ spec:
       group: gateway.networking.k8s.io
       sectionName: https
   hostnames:
-    - argo.medicalbioinformatics.de
+    - argok8.medicalbioinformatics.de
   rules:
     - backendRefs:
         - name: argocd-server
