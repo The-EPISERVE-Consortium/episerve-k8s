@@ -6,4 +6,6 @@ resources:
   - listenerset-acme.yaml
   - httproute.yaml
   - certificate.yaml
+  - referencegrant.yaml
+  
 
