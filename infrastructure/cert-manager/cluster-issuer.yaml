@@ -12,6 +12,6 @@ spec:
       - http01:
           gatewayHTTPRoute:
             parentRefs:
-              - name: shared-internal-gateway
+              - name: shared-public-gateway
                 namespace: kgateway-system
-                kind: Gateway
+                kind: Gateway                
