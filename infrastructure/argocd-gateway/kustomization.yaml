@@ -3,7 +3,7 @@ kind: Kustomization
 namespace: argocd
 namePrefix: argocd-
 resources:
-  - ../../base/gateway
+  - ../base/gateway
 replacements:
   - source:
       kind: ConfigMap
