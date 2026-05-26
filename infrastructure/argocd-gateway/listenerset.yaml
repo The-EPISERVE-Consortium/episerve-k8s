@@ -3,8 +3,6 @@ kind: ListenerSet
 metadata:
   name: argocd-listeners
   namespace: argocd
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   parentRef:
     kind: Gateway
