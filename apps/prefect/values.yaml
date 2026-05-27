@@ -11,7 +11,4 @@ postgresql:
       size: 1Gi
 
 server:
-  env:
-    - name: PREFECT_UI_API_URL
-      value: "https://prefect.episerve.zib.de/api"
-
+  prefectUiApiUrl: "https://prefect.episerve.zib.de/api"
