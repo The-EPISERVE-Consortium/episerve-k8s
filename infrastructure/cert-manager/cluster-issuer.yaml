@@ -29,3 +29,4 @@ spec:
         selector:
           dnsZones:
             - prefect.episerve.zib.de
+            - metabase.episerve.zib.de
