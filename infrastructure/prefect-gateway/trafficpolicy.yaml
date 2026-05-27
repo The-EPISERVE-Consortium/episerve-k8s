@@ -1,0 +1,16 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: prefect-zib-only
+  namespace: default
+spec:
+  acl:
+    defaultAction: deny
+    rules:
+      - action: allow
+        cidrs:
+          - 130.73.0.0/16
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: gateway-route

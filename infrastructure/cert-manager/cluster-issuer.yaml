@@ -16,3 +16,10 @@ spec:
                 namespace: argocd
                 kind: ListenerSet
                 group: gateway.networking.k8s.io
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: gateway-acme-listeners
+                namespace: default
+                kind: ListenerSet
+                group: gateway.networking.k8s.io

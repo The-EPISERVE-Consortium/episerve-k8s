@@ -4,3 +4,4 @@ resources:
   - sealed-secrets
   - cert-manager
   - argocd-gateway
+  - prefect-gateway
