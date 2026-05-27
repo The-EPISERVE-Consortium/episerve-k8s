@@ -71,6 +71,16 @@ replacements:
           name: argocd-route
         fieldPaths:
           - spec.rules.0.backendRefs.0.port
+  - source:
+      kind: ConfigMap
+      name: argocd-gateway-config
+      fieldPath: data.listenerName
+    targets:
+      - select:
+          kind: HTTPRoute
+          name: argocd-route
+        fieldPaths:
+          - spec.parentRefs.0.name
 configMapGenerator:
   - name: argocd-gateway-config
     literals:
@@ -78,4 +88,5 @@ configMapGenerator:
       - secretName=argocd-tls
       - serviceName=argocd-server
       - servicePort=80
+      - listenerName=argocd-listeners
       

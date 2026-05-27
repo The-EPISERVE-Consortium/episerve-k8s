@@ -4,9 +4,9 @@ metadata:
   name: route
 spec:
   parentRefs:
-    - name: listeners
+    - group: gateway.networking.k8s.io
       kind: ListenerSet
-      group: gateway.networking.k8s.io
+      name: GATEWAY_LISTENER_NAME
       sectionName: https
   hostnames:
     - GATEWAY_HOSTNAME
@@ -18,3 +18,4 @@ spec:
         - path:
             type: PathPrefix
             value: /
+            

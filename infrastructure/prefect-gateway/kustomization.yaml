@@ -71,6 +71,16 @@ replacements:
           name: prefect-route
         fieldPaths:
           - spec.rules.0.backendRefs.0.port
+  - source:
+      kind: ConfigMap
+      name: prefect-gateway-config
+      fieldPath: data.listenerName
+    targets:
+      - select:
+          kind: HTTPRoute
+          name: prefect-route
+        fieldPaths:
+          - spec.parentRefs.0.name
 configMapGenerator:
   - name: prefect-gateway-config
     literals:
@@ -78,3 +88,5 @@ configMapGenerator:
       - secretName=prefect-tls
       - serviceName=prefect-server
       - servicePort=4200
+      - listenerName=prefect-listeners
+      

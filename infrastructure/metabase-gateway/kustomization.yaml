@@ -71,6 +71,16 @@ replacements:
           name: metabase-route
         fieldPaths:
           - spec.rules.0.backendRefs.0.port
+  - source:
+      kind: ConfigMap
+      name: metabase-gateway-config
+      fieldPath: data.listenerName
+    targets:
+      - select:
+          kind: HTTPRoute
+          name: metabase-route
+        fieldPaths:
+          - spec.parentRefs.0.name
 configMapGenerator:
   - name: metabase-gateway-config
     literals:
@@ -78,3 +88,5 @@ configMapGenerator:
       - secretName=metabase-tls
       - serviceName=metabase
       - servicePort=3000
+      - listenerName=metabase-listeners
+      
