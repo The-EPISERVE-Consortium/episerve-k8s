@@ -17,8 +17,8 @@ spec:
                 kind: ListenerSet
                 group: gateway.networking.k8s.io
         selector:
-          namespaces:
-            - argocd
+          dnsZones:
+            - argocd.episerve.zib.de
       - http01:
           gatewayHTTPRoute:
             parentRefs:
@@ -27,5 +27,5 @@ spec:
                 kind: ListenerSet
                 group: gateway.networking.k8s.io
         selector:
-          namespaces:
-            - default
+          dnsZones:
+            - prefect.episerve.zib.de
