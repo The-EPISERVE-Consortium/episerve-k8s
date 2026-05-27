@@ -1,7 +1,7 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: prefect-zib-only
+  name: zib-only
   namespace: default
 spec:
   acl:
