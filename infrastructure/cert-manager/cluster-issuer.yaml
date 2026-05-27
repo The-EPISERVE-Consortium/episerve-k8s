@@ -12,7 +12,7 @@ spec:
       - http01:
           gatewayHTTPRoute:
             parentRefs:
-              - name: gateway-acme-listeners
+              - name: argocd-acme-listeners
                 namespace: argocd
                 kind: ListenerSet
                 group: gateway.networking.k8s.io
@@ -22,11 +22,20 @@ spec:
       - http01:
           gatewayHTTPRoute:
             parentRefs:
-              - name: gateway-acme-listeners
+              - name: prefect-acme-listeners
                 namespace: default
                 kind: ListenerSet
                 group: gateway.networking.k8s.io
         selector:
           dnsZones:
             - prefect.episerve.zib.de
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: metabase-acme-listeners
+                namespace: default
+                kind: ListenerSet
+                group: gateway.networking.k8s.io
+        selector:
+          dnsZones:
             - metabase.episerve.zib.de

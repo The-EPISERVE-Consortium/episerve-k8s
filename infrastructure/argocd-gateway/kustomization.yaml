@@ -1,79 +1,81 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: argocd
+namePrefix: argocd-
 resources:
   - ../base/gateway
   - trafficpolicy.yaml
 replacements:
   - source:
       kind: ConfigMap
-      name: gateway-config
+      name: argocd-gateway-config
       fieldPath: data.hostname
     targets:
       - select:
           kind: ListenerSet
-          name: gateway-listeners
+          name: argocd-listeners
         fieldPaths:
           - spec.listeners.0.hostname
       - select:
           kind: ListenerSet
-          name: gateway-acme-listeners
+          name: argocd-acme-listeners
         fieldPaths:
           - spec.listeners.0.hostname
       - select:
           kind: HTTPRoute
-          name: gateway-route
+          name: argocd-route
         fieldPaths:
           - spec.hostnames.0
       - select:
           kind: Certificate
-          name: gateway-tls
+          name: argocd-tls
         fieldPaths:
           - spec.dnsNames.0
   - source:
       kind: ConfigMap
-      name: gateway-config
+      name: argocd-gateway-config
       fieldPath: data.secretName
     targets:
       - select:
           kind: ListenerSet
-          name: gateway-listeners
+          name: argocd-listeners
         fieldPaths:
           - spec.listeners.0.tls.certificateRefs.0.name
       - select:
           kind: Certificate
-          name: gateway-tls
+          name: argocd-tls
         fieldPaths:
           - spec.secretName
       - select:
           kind: ReferenceGrant
-          name: gateway-tls-grant
+          name: argocd-tls-grant
         fieldPaths:
           - spec.to.0.name
   - source:
       kind: ConfigMap
-      name: gateway-config
+      name: argocd-gateway-config
       fieldPath: data.serviceName
     targets:
       - select:
           kind: HTTPRoute
-          name: gateway-route
+          name: argocd-route
         fieldPaths:
           - spec.rules.0.backendRefs.0.name
   - source:
       kind: ConfigMap
-      name: gateway-config
+      name: argocd-gateway-config
       fieldPath: data.servicePort
     targets:
       - select:
           kind: HTTPRoute
-          name: gateway-route
+          name: argocd-route
         fieldPaths:
           - spec.rules.0.backendRefs.0.port
 configMapGenerator:
-  - name: gateway-config
+  - name: argocd-gateway-config
     literals:
-      - hostname=argo.episerve.zib.de
-      - secretName=argo-tls
+      - hostname=argocd.episerve.zib.de
+      - secretName=argocd-tls
       - serviceName=argocd-server
       - servicePort=80
+      
