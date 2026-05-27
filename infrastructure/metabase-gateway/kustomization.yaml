@@ -87,6 +87,6 @@ configMapGenerator:
       - hostname=metabase.episerve.zib.de
       - secretName=metabase-tls
       - serviceName=metabase
-      - servicePort=3000
+      - servicePort=80
       - listenerName=metabase-listeners
       
