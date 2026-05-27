@@ -10,6 +10,5 @@ postgresql:
       storageClass: csi-rbd-sc
       size: 1Gi
 server:
-  env:
-    - name: PREFECT_UI_API_URL
-      value: "https://prefect.episerve.zib.de/api"
+  uiConfig:
+    prefectUiApiUrl: "https://prefect.episerve.zib.de/api"
