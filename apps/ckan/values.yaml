@@ -1,0 +1,27 @@
+pvc:
+  enabled: false
+
+MasterDBPass: &MasterDBPass CHANGE-ME-FROM-BITWARDEN
+CkanDBPass: &CkanDBPass CHANGE-ME-FROM-BITWARDEN
+DatastoreRWDBPass: &DatastoreRWDBPass CHANGE-ME-FROM-BITWARDEN
+DatastoreRODBPass: &DatastoreRODBPass CHANGE-ME-FROM-BITWARDEN
+
+ckan:
+  siteUrl: "https://ckan.episerve.zib.de"
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 6
+    timeoutSeconds: 15
+  readiness:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 6
+    timeoutSeconds: 15
+
+zookeeper:
+  resources:
+    limits:
+      memory: 768Mi
+    requests:
+      memory: 512Mi
