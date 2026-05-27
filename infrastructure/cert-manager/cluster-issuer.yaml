@@ -1,25 +1,21 @@
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: your@email.de
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    solvers:
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: gateway-acme-listeners
-                namespace: argocd
-                kind: ListenerSet
-                group: gateway.networking.k8s.io
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: gateway-acme-listeners
-                namespace: default
-                kind: ListenerSet
-                group: gateway.networking.k8s.io
+solvers:
+  - http01:
+      gatewayHTTPRoute:
+        parentRefs:
+          - name: gateway-acme-listeners
+            namespace: argocd
+            kind: ListenerSet
+            group: gateway.networking.k8s.io
+    selector:
+      namespaces:
+        - argocd
+  - http01:
+      gatewayHTTPRoute:
+        parentRefs:
+          - name: gateway-acme-listeners
+            namespace: default
+            kind: ListenerSet
+            group: gateway.networking.k8s.io
+    selector:
+      namespaces:
+        - default
