@@ -6,4 +6,5 @@ resources:
   - argocd-gateway
   - prefect-gateway
   - metabase-gateway
+  - ckan-gateway
   

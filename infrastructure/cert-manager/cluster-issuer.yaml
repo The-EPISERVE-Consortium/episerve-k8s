@@ -39,3 +39,13 @@ spec:
         selector:
           dnsZones:
             - metabase.episerve.zib.de
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: ckan-acme-listeners
+                namespace: ckan
+                kind: ListenerSet
+                group: gateway.networking.k8s.io
+        selector:
+          dnsZones:
+            - ckan.episerve.zib.de	
