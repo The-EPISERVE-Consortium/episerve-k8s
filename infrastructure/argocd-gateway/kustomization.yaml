@@ -73,7 +73,7 @@ replacements:
 configMapGenerator:
   - name: gateway-config
     literals:
-      - hostname=argok8.medicalbioinformatics.de
+      - hostname=argo.episerve.zib.de
       - secretName=argo-tls
       - serviceName=argocd-server
       - servicePort=80
