@@ -6,7 +6,6 @@ resources:
   - httproute.yaml
   - certificate.yaml
   - referencegrant.yaml
-  - trafficpolicy.yaml
 replacements:
   - source:
       kind: ConfigMap
@@ -83,13 +82,3 @@ replacements:
           name: route
         fieldPaths:
           - spec.parentRefs.0.name
-  - source:
-      kind: ConfigMap
-      name: gateway-config
-      fieldPath: data.routeName
-    targets:
-      - select:
-          kind: TrafficPolicy
-          name: zib-only
-        fieldPaths:
-          - spec.targetRefs.0.name
