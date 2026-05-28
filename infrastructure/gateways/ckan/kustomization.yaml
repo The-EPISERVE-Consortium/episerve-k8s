@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: ckan
 namePrefix: ckan-
 components:
-  - ../base/gateway
-  - ../base/gateway-zib-only
+  - ../../base/gateway
+  - ../../base/gateway-zib-only
 configMapGenerator:
   - name: gateway-config
     literals:
