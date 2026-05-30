@@ -48,4 +48,14 @@ spec:
                 group: gateway.networking.k8s.io
         selector:
           dnsZones:
-            - ckan.episerve.zib.de	
+            - ckan.episerve.zib.de
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: doip-server-acme-listeners
+                namespace: default
+                kind: ListenerSet
+                group: gateway.networking.k8s.io
+        selector:
+          dnsZones:
+            - doip.episerve.zib.de
