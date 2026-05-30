@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doip-server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doip-server
+  template:
+    metadata:
+      labels:
+        app: doip-server
+    spec:
+      containers:
+        - name: doip-server
+          image: ghcr.io/the-episerve-consortium/episerve_doip_server:latest
+          ports:
+            - containerPort: 80
+            - containerPort: 3567
+          env:
+            - name: LAKEFS_URL
+              value: "https://lake-episerve.zib.de"
+            - name: LAKEFS_REPO
+              value: "model-runs"
+            - name: LAKEFS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: lakefs-credentials
+                  key: lakefs-access-key
+            - name: LAKEFS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lakefs-credentials
+                  key: lakefs-secret-key
