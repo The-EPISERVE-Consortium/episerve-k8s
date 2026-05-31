@@ -24,6 +24,8 @@ helmCharts:
       minio:
         local_setup: true
         storageClass: "csi-rbd-sc"
+      worker:
+        memoryLimit: 2000Mi
       env:
         secret_key: "YMNvQlertOeqCq9GlkwMdblGOm98ageBxGvPhMIOH9C0hKR_Uy"
         live_server_secret_key: "hbZ1RvW0XXtfPwX_hVVs01nUXbeNKdPCS-"
