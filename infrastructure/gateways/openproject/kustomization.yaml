@@ -8,7 +8,7 @@ components:
 configMapGenerator:
   - name: gateway-config
     literals:
-      - hostname=openproject.episerve.zib.de
+      - hostname=project.episerve.zib.de
       - secretName=openproject-tls
       - serviceName=openproject
       - servicePort=8080

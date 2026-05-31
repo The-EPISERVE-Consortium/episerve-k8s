@@ -68,4 +68,4 @@ spec:
                 group: gateway.networking.k8s.io
         selector:
           dnsZones:
-            - openproject.episerve.zib.de
+            - project.episerve.zib.de

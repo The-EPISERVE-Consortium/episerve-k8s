@@ -15,7 +15,7 @@ helmCharts:
         enabled: false
       openproject:
         https: true
-        host: openproject.episerve.zib.de
+        host: project.episerve.zib.de
         admin_user:
           mail: "admin@episerve.zib.de"
           password_reset: "false"
