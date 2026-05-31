@@ -6,3 +6,4 @@ resources:
   - metabase
   - ckan
   - doip-server
+  - openproject
