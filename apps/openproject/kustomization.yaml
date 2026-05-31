@@ -51,6 +51,9 @@ patches:
       labelSelector: "app.kubernetes.io/component=seeder"
     patch: |-
       - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Replace=true
+      - op: add
         path: /spec/template/spec/containers/0/env/-
         value:
           name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD
