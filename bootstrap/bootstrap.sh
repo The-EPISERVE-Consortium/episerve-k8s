@@ -39,3 +39,4 @@ echo "     Enable Helm rendering for Kustomize (required for infrastructure/seal
 echo "     kubectl patch configmap argocd-cm -n argocd --patch '{\"data\":{\"kustomize.buildOptions\":\"--enable-helm\"}}'"
 echo "     kubectl rollout restart deployment argocd-repo-server -n argocd"
 echo "  5. Apply ApplicationSet: kubectl apply -f applicationset.yaml -n argocd"
+echo "  6. Register Prefect workflow deployments: ./bootstrap/prefect/run-bootstrap.sh"
