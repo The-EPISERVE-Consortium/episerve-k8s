@@ -59,3 +59,13 @@ spec:
         selector:
           dnsZones:
             - doip.episerve.zib.de
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: openproject-acme-listeners
+                namespace: openproject
+                kind: ListenerSet
+                group: gateway.networking.k8s.io
+        selector:
+          dnsZones:
+            - openproject.episerve.zib.de

@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: openproject
+resources:
+  - sealed-secret.yaml
+helmCharts:
+  - name: openproject
+    repo: https://charts.openproject.org
+    version: "13.6.0"
+    releaseName: openproject
+    namespace: openproject
+    valuesInline:
+      ingress:
+        enabled: false
+      openproject:
+        https: true
+        host: openproject.episerve.zib.de
+        admin_user:
+          mail: "admin@episerve.zib.de"
+          password_reset: "false"
+          secret: openproject-credentials
+          secretKeys:
+            password: admin-password
+      postgresql:
+        auth:
+          username: openproject
+          database: openproject
+          existingSecret: openproject-credentials
+          secretKeys:
+            userPasswordKey: password
+            adminPasswordKey: postgres-password
+        primary:
+          persistence:
+            enabled: true
+            storageClass: csi-rbd-sc
+            size: 10Gi
+      persistence:
+        enabled: true
+        storageClass: csi-rbd-sc
+        size: 5Gi
+        accessModes:
+          - ReadWriteOnce
