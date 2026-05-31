@@ -30,3 +30,13 @@ helmCharts:
       env:
         secret_key: "YMNvQlertOeqCq9GlkwMdblGOm98ageBxGvPhMIOH9C0hKR_Uy"
         live_server_secret_key: "hbZ1RvW0XXtfPwX_hVVs01nUXbeNKdPCS-"
+patches:
+  - target:
+      kind: Job
+      name: plane-api-migrate-1
+    patch: |-
+      - op: remove
+        path: /spec/template/metadata/annotations/timestamp
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Replace=true
