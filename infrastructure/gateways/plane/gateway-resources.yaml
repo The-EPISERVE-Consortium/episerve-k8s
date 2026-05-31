@@ -1,0 +1,153 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: plane-tls
+  namespace: plane
+spec:
+  secretName: plane-tls
+  dnsNames:
+    - plane.episerve.zib.de
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: plane-tls-grant
+  namespace: plane
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: kgateway-system
+  to:
+    - group: ""
+      kind: Secret
+      name: plane-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: plane-acme-listeners
+  namespace: plane
+spec:
+  parentRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: shared-public-gateway
+    namespace: kgateway-system
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: plane.episerve.zib.de
+      name: http
+      port: 80
+      protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: plane-listeners
+  namespace: plane
+spec:
+  parentRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: shared-public-gateway
+    namespace: kgateway-system
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: plane.episerve.zib.de
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: plane-tls
+            kind: Secret
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: plane-route
+  namespace: plane
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: plane-listeners
+      sectionName: https
+  hostnames:
+    - plane.episerve.zib.de
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - name: plane-api
+          port: 8000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth
+      backendRefs:
+        - name: plane-api
+          port: 8000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /spaces
+      backendRefs:
+        - name: plane-space
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /god-mode
+      backendRefs:
+        - name: plane-admin
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /live
+      backendRefs:
+        - name: plane-live
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /uploads
+      backendRefs:
+        - name: plane-minio
+          port: 9000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: plane-web
+          port: 3000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: plane-zib-only
+  namespace: plane
+spec:
+  acl:
+    defaultAction: deny
+    rules:
+      - action: allow
+        cidrs:
+          - 130.73.0.0/16
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: plane-route
