@@ -4,7 +4,6 @@ namespace: default
 namePrefix: doip-server-
 components:
   - ../../base/gateway
-  - ../../base/gateway-zib-only
 configMapGenerator:
   - name: gateway-config
     literals:
