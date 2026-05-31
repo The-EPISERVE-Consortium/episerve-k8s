@@ -108,8 +108,21 @@ spec:
           port: 3000
     - matches:
         - path:
-            type: PathPrefix
+            type: Exact
             value: /god-mode
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: plane.episerve.zib.de
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /god-mode/
+            statusCode: 301
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /god-mode/
       backendRefs:
         - name: plane-admin
           port: 3000
