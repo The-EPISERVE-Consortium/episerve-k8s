@@ -19,9 +19,6 @@ helmCharts:
         admin_user:
           mail: "admin@episerve.zib.de"
           password_reset: "false"
-          secret: openproject-credentials
-          secretKeys:
-            password: admin-password
       postgresql:
         auth:
           username: openproject
@@ -42,9 +39,27 @@ helmCharts:
         accessModes:
           - ReadWriteOnce
 patches:
-  - patch: |-
-      $patch: delete
-      apiVersion: apps/v1
+  - target:
       kind: Deployment
-      metadata:
-        name: openproject-cron
+      name: openproject-cron
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target:
+      kind: Job
+      labelSelector: "app.kubernetes.io/component=seeder"
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: openproject-credentials
+              key: admin-password
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET
+          value: "false"
