@@ -69,3 +69,7 @@ patches:
         value:
           name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET
           value: "false"
+      - op: remove
+        path: /spec/template/spec/volumes/2
+      - op: remove
+        path: /spec/template/spec/containers/0/volumeMounts/2
