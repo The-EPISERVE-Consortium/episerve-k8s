@@ -41,3 +41,10 @@ helmCharts:
         size: 5Gi
         accessModes:
           - ReadWriteOnce
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: openproject-cron
