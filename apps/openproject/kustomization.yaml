@@ -51,8 +51,11 @@ patches:
       labelSelector: "app.kubernetes.io/component=seeder"
     patch: |-
       - op: add
-        path: /metadata/annotations/argocd.argoproj.io~1sync-options
-        value: Replace=true
+        path: /metadata/annotations/argocd.argoproj.io~1hook
+        value: PreSync
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1hook-delete-policy
+        value: BeforeHookCreation
       - op: add
         path: /spec/template/spec/containers/0/env/-
         value:
