@@ -12,6 +12,7 @@ helmCharts:
     valuesInline:
       ingress:
         enabled: false
+        appHost: "plane.episerve.zib.de"
       redis:
         local_setup: true
         storageClass: "csi-rbd-sc"
