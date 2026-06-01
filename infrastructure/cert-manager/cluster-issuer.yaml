@@ -69,13 +69,3 @@ spec:
         selector:
           dnsZones:
             - project.episerve.zib.de
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: plane-acme-listeners
-                namespace: plane
-                kind: ListenerSet
-                group: gateway.networking.k8s.io
-        selector:
-          dnsZones:
-            - plane.episerve.zib.de
