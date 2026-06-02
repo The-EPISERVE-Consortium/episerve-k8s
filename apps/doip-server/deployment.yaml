@@ -22,8 +22,8 @@ spec:
           env:
             - name: LAKEFS_URL
               value: "https://lake-episerve.zib.de"
-            - name: LAKEFS_REPO
-              value: "model-runs"
+            - name: LAKEFS_REPOS
+              value: "data-processed,model-runs"
             - name: LAKEFS_USER
               valueFrom:
                 secretKeyRef:
