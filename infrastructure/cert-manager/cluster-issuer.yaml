@@ -48,7 +48,7 @@ spec:
                 group: gateway.networking.k8s.io
         selector:
           dnsZones:
-            - ckan.episerve.zib.de
+            - data.episerve.zib.de
       - http01:
           gatewayHTTPRoute:
             parentRefs:

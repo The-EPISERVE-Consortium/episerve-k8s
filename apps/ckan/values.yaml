@@ -7,7 +7,7 @@ DatastoreRWDBPass: &DatastoreRWDBPass CHANGE-ME-FROM-BITWARDEN
 DatastoreRODBPass: &DatastoreRODBPass CHANGE-ME-FROM-BITWARDEN
 
 ckan:
-  siteUrl: "https://ckan.episerve.zib.de"
+  siteUrl: "https://data.episerve.zib.de"
   liveness:
     initialDelaySeconds: 60
     periodSeconds: 10

@@ -8,7 +8,7 @@ components:
 configMapGenerator:
   - name: gateway-config
     literals:
-      - hostname=ckan.episerve.zib.de
+      - hostname=data.episerve.zib.de
       - secretName=ckan-tls
       - serviceName=ckan
       - servicePort=80
