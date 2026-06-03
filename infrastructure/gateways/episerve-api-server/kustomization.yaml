@@ -4,6 +4,8 @@ namespace: default
 namePrefix: episerve-api-server-
 components:
   - ../../base/gateway
+resources:
+  - websocket-policy.yaml
 configMapGenerator:
   - name: gateway-config
     literals:
