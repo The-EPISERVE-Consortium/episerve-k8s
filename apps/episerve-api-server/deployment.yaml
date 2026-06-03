@@ -22,7 +22,7 @@ spec:
             - name: LAKEFS_URL
               value: "https://lake-episerve.zib.de"
             - name: CKAN_URL
-              value: "https://data.episerve.zib.de"
+              value: "http://ckan.ckan.svc.cluster.local"
             - name: DOIP_URL
               value: "https://doip.episerve.zib.de"
             - name: PREFECT_API_URL
