@@ -1,13 +1,13 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
 metadata:
-  name: episerve-api-server-websocket
-  namespace: default
+  name: shared-gateway-websocket
+  namespace: kgateway-system
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
-      kind: ListenerSet
-      name: episerve-api-server-listeners
+      kind: Gateway
+      name: shared-public-gateway
   upgradeConfig:
     enabledUpgrades:
       - websocket

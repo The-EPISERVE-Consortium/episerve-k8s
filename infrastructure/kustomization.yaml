@@ -4,4 +4,5 @@ resources:
   - sealed-secrets
   - cert-manager
   - gateways
+  - gateway-websocket-policy.yaml
   
