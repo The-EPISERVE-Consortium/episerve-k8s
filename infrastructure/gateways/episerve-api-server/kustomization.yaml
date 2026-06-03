@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+namePrefix: episerve-api-server-
+components:
+  - ../../base/gateway
+configMapGenerator:
+  - name: gateway-config
+    literals:
+      - hostname=api.episerve.zib.de
+      - secretName=episerve-api-server-tls
+      - serviceName=episerve-api-server
+      - servicePort=80
+      - listenerName=episerve-api-server-listeners
+      - routeName=episerve-api-server-route

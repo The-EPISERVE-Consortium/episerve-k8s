@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: episerve-api-server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: episerve-api-server
+  template:
+    metadata:
+      labels:
+        app: episerve-api-server
+    spec:
+      containers:
+        - name: episerve-api-server
+          image: ghcr.io/the-episerve-consortium/episerve_api_server:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: LAKEFS_URL
+              value: "https://lake-episerve.zib.de"
+            - name: CKAN_URL
+              value: "https://data.episerve.zib.de"
+            - name: DOIP_URL
+              value: "https://doip.episerve.zib.de"
+            - name: PREFECT_API_URL
+              value: "http://prefect-server.default.svc.cluster.local:4200/api"
+            - name: LAKEFS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lakefs-credentials
+                  key: lakefs-access-key
+            - name: LAKEFS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lakefs-credentials
+                  key: lakefs-secret-key
+            - name: CKAN_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-credentials
+                  key: ckan-api-token
