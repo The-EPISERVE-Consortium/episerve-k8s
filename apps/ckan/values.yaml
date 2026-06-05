@@ -15,6 +15,26 @@ ckan:
   sysadminPassword: "placeholder"
   sysadminApiToken: "placeholder"
 
+  # Expose JWT and session secrets under the names the CKAN startup script expects.
+  # Without these, start_ckan.sh auto-generates random secrets into production.ini,
+  # causing a mismatch between token signing (env var) and verification (production.ini).
+  extraEnv:
+    - name: JWT_ENCODE_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: session-secret
+          key: jwt_encode
+    - name: JWT_DECODE_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: session-secret
+          key: jwt_decode
+    - name: BEAKER_SESSION_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: session-secret
+          key: session_secret
+
   liveness:
     initialDelaySeconds: 60
     periodSeconds: 10
