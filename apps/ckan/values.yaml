@@ -21,6 +21,10 @@ ckan:
   # Without these, start_ckan.sh auto-generates random secrets into production.ini,
   # causing a mismatch between token signing (env var) and verification (production.ini).
   extraEnv:
+    - name: CKAN__UPLOAD__ADMIN__TYPES
+      value: "image"
+    - name: CKAN__UPLOAD__ADMIN__MIMETYPES
+      value: "image/png image/gif image/jpeg"
     - name: JWT_ENCODE_SECRET
       valueFrom:
         secretKeyRef:
