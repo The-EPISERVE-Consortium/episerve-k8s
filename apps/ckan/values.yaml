@@ -10,6 +10,8 @@ ckan:
   sysadminEmail: "tofconrad@googlemail.com"
   siteTitle: "EpiServe Data Catalog"
   siteId: "episerve"
+  storagePath: "/app/data"
+  upload_enabled: "true"
   # Credentials are supplied via the ckancredentials SealedSecret; these placeholders
   # satisfy the chart's template rendering but are not applied to the cluster.
   sysadminPassword: "placeholder"
