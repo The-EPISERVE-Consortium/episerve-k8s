@@ -81,21 +81,25 @@ echo "==> Sealing secrets..."
 
 echo "==> sealed-secret.yaml written."
 echo ""
-echo "==> Database init commands (run after postgres pod is Ready):"
-echo "    These create the users and databases that CKAN expects."
-echo "    Copy and run in your terminal:"
-echo ""
-cat <<DBINIT
-kubectl exec -n ckan statefulset/postgres -- bash -c "
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -c \\\"CREATE USER ckan_default WITH PASSWORD '${CKAN_DB_PASS}';\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -c \\\"CREATE DATABASE ckan_default OWNER ckan_default;\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -c \\\"CREATE DATABASE datastore_default OWNER ckan_default;\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -c \\\"CREATE USER datastorerw WITH PASSWORD '${DATASTORE_RW_PASS}';\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -c \\\"CREATE USER datastorero WITH PASSWORD '${DATASTORE_RO_PASS}';\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -d datastore_default -c \\\"GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO datastorerw;\\\" || true
-  PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -d datastore_default -c \\\"GRANT SELECT ON ALL TABLES IN SCHEMA public TO datastorero;\\\" || true
-"
-DBINIT
+echo "==> Waiting for postgres to be ready before running DB init..."
+kubectl wait pod/postgres-0 -n "$NAMESPACE" --for=condition=Ready --timeout=120s
+
+echo "==> Initialising databases..."
+kubectl exec -n "$NAMESPACE" statefulset/postgres -- bash -c "
+PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres <<EOSQL
+CREATE USER ckan_default WITH PASSWORD '${CKAN_DB_PASS}';
+CREATE DATABASE ckan_default OWNER ckan_default;
+CREATE DATABASE datastore_default OWNER ckan_default;
+CREATE USER datastorerw WITH PASSWORD '${DATASTORE_RW_PASS}';
+CREATE USER datastorero WITH PASSWORD '${DATASTORE_RO_PASS}';
+GRANT ALL PRIVILEGES ON DATABASE datastore_default TO datastorerw;
+EOSQL
+PGPASSWORD='${MASTER_DB_PASS}' psql -U postgres -d datastore_default <<EOSQL
+GRANT ALL ON SCHEMA public TO datastorerw;
+GRANT USAGE ON SCHEMA public TO datastorero;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO datastorero;
+EOSQL
+" && echo "==> DB init complete." || echo "WARNING: some DB init statements failed (may be safe if re-running on existing cluster)"
 echo ""
 echo "==> After DB init and ArgoCD sync, complete the post-install checklist:"
 echo "    1. Log in to https://data.episerve.zib.de with ckan_admin / <generated sysadmin password below>"
