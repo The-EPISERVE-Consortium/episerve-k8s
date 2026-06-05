@@ -1,0 +1,73 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ckan
+resources:
+  - sealed-secret.yaml
+helmCharts:
+  - name: ckan
+    repo: https://keitaro-charts.storage.googleapis.com
+    version: v4.0.7
+    releaseName: ckan
+    namespace: ckan
+    valuesFile: values.yaml
+patches:
+  # Replace chart-generated credential secrets with SealedSecrets.
+  # The chart builds these from inline values; we own them via sealed-secret.yaml instead.
+  - patch: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ckancredentials
+      $patch: delete
+    target:
+      version: v1
+      kind: Secret
+      name: ckancredentials
+  - patch: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: postgrescredentials
+      $patch: delete
+    target:
+      version: v1
+      kind: Secret
+      name: postgrescredentials
+  # session-secret uses helm lookup(), which doesn't work in kustomize's offline rendering.
+  # It would regenerate JWT/CSRF secrets on every sync; we pin them via SealedSecret.
+  - patch: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: session-secret
+      $patch: delete
+    target:
+      version: v1
+      kind: Secret
+      name: session-secret
+  - patch: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ckansysadminapitoken
+      $patch: delete
+    target:
+      version: v1
+      kind: Secret
+      name: ckansysadminapitoken
+  # Route internal calls to ckan/doip hostnames to the Gateway ClusterIP (hairpin NAT workaround).
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: not-used
+      spec:
+        template:
+          spec:
+            hostAliases:
+              - ip: "10.98.23.135"
+                hostnames:
+                  - "ckan.episerve.zib.de"
+                  - "doip.episerve.zib.de"
+    target:
+      kind: Deployment
