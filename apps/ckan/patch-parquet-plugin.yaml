@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ckan
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: install-ckan-plugins
+          image: keitaro/ckan:2.11.4
+          command:
+            - pip
+            - install
+            - --user
+            - --quiet
+            - git+https://github.com/DataShades/ckanext-parquet.git
+          env:
+            - name: HOME
+              value: /app
+          volumeMounts:
+            - name: ckan-user-local
+              mountPath: /app/.local
+      containers:
+        - name: ckan
+          env:
+            - name: CKAN__PLUGINS
+              value: "envvars activity image_view text_view datatables_view datastore xloader parquet_view"
+          volumeMounts:
+            - name: ckan-user-local
+              mountPath: /app/.local
+      volumes:
+        - name: ckan-user-local
+          emptyDir: {}

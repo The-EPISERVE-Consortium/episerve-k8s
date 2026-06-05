@@ -56,6 +56,13 @@ patches:
       version: v1
       kind: Secret
       name: ckansysadminapitoken
+  # Install ckanext-parquet via an init container (no custom image required).
+  # The emptyDir at /app/.local is HOME for the ckan user, so pip --user installs are
+  # picked up automatically by Python's site module without any PYTHONPATH changes.
+  - path: patch-parquet-plugin.yaml
+    target:
+      kind: Deployment
+      name: ckan
   # Route internal calls to ckan/doip hostnames to the Gateway ClusterIP (hairpin NAT workaround).
   - patch: |-
       apiVersion: apps/v1
