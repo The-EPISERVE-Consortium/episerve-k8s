@@ -10,6 +10,8 @@ spec:
         revision: HEAD
         directories:
           - path: apps/*
+          - path: apps/ckan
+            exclude: true
   template:
     metadata:
       name: '{{path.basename}}'
