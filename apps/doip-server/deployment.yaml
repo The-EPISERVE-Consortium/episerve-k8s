@@ -34,3 +34,5 @@ spec:
                 secretKeyRef:
                   name: lakefs-credentials
                   key: lakefs-secret-key
+            - name: CORS_ALLOWED_ORIGINS
+              value: "https://data.episerve.zib.de"
