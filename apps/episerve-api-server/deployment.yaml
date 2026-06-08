@@ -42,3 +42,18 @@ spec:
                 secretKeyRef:
                   name: ckan-credentials
                   key: ckan-api-token
+            - name: AUTH_MASTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: episerve-api-server-auth
+                  key: auth-master-secret
+            - name: AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: episerve-api-server-auth
+                  key: auth-username
+            - name: AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: episerve-api-server-auth
+                  key: auth-password
