@@ -85,16 +85,3 @@ extraObjects:
         includedNamespaces: ["default"]
         ttl: 720h
         snapshotVolumes: true
-
-  - apiVersion: velero.io/v1
-    kind: Schedule
-    metadata:
-      name: weekly-kube-system
-      namespace: velero
-    spec:
-      schedule: "0 4 * * 0"
-      template:
-        includedNamespaces: ["kube-system"]
-        includedResources: ["secrets"]
-        ttl: 2160h
-        snapshotVolumes: false
