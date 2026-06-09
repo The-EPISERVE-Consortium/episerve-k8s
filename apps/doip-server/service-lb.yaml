@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: doip-server-lb
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: doip-server
+  ports:
+    - name: doip
+      port: 3567
+      targetPort: 3567
+      protocol: TCP
+    - name: doip-compat
+      port: 3568
+      targetPort: 3568
+      protocol: TCP
