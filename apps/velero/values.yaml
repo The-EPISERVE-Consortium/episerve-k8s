@@ -24,8 +24,7 @@ initContainers:
       - mountPath: /target
         name: plugins
 
-nodeAgent:
-  enabled: true
+deployNodeAgent: true
 
 extraObjects:
   # ── CKAN ─────────────────────────────────────────────────────────────────
