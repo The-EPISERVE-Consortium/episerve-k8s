@@ -28,6 +28,7 @@ nodeAgent:
   enabled: true
 
 extraObjects:
+  # ── CKAN ─────────────────────────────────────────────────────────────────
   - apiVersion: velero.io/v1
     kind: Schedule
     metadata:
@@ -37,7 +38,7 @@ extraObjects:
       schedule: "0 2 * * *"
       template:
         includedNamespaces: ["ckan"]
-        ttl: 720h
+        ttl: 336h      # 14 days
         snapshotVolumes: false
         defaultVolumesToFsBackup: true
         hooks:
@@ -69,13 +70,52 @@ extraObjects:
   - apiVersion: velero.io/v1
     kind: Schedule
     metadata:
+      name: weekly-ckan
+      namespace: velero
+    spec:
+      schedule: "0 4 * * 0"
+      template:
+        includedNamespaces: ["ckan"]
+        ttl: 2160h     # 90 days
+        snapshotVolumes: false
+        defaultVolumesToFsBackup: true
+        hooks:
+          resources:
+            - name: pg-dump
+              includedNamespaces: ["ckan"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql
+              pre:
+                - exec:
+                    container: postgresql
+                    timeout: 10m
+                    onError: Fail
+                    command:
+                      - /bin/bash
+                      - -c
+                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+              post:
+                - exec:
+                    container: postgresql
+                    timeout: 1m
+                    onError: Continue
+                    command:
+                      - /bin/bash
+                      - -c
+                      - rm -f /bitnami/postgresql/velero-backup.sql.gz
+
+  # ── OPENPROJECT ──────────────────────────────────────────────────────────
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
       name: daily-openproject
       namespace: velero
     spec:
       schedule: "30 2 * * *"
       template:
         includedNamespaces: ["openproject"]
-        ttl: 720h
+        ttl: 336h
         snapshotVolumes: false
         defaultVolumesToFsBackup: true
         hooks:
@@ -107,13 +147,136 @@ extraObjects:
   - apiVersion: velero.io/v1
     kind: Schedule
     metadata:
+      name: weekly-openproject
+      namespace: velero
+    spec:
+      schedule: "30 4 * * 0"
+      template:
+        includedNamespaces: ["openproject"]
+        ttl: 2160h
+        snapshotVolumes: false
+        defaultVolumesToFsBackup: true
+        hooks:
+          resources:
+            - name: pg-dump
+              includedNamespaces: ["openproject"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql
+              pre:
+                - exec:
+                    container: postgresql
+                    timeout: 10m
+                    onError: Fail
+                    command:
+                      - /bin/bash
+                      - -c
+                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+              post:
+                - exec:
+                    container: postgresql
+                    timeout: 1m
+                    onError: Continue
+                    command:
+                      - /bin/bash
+                      - -c
+                      - rm -f /bitnami/postgresql/velero-backup.sql.gz
+
+  # ── DEFAULT (MariaDB + Metabase + Prefect DBs) ───────────────────────────
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
       name: daily-default
       namespace: velero
     spec:
       schedule: "0 3 * * *"
       template:
         includedNamespaces: ["default"]
-        ttl: 720h
+        ttl: 336h
+        snapshotVolumes: false
+        defaultVolumesToFsBackup: true
+        hooks:
+          resources:
+            - name: mariadb-dump
+              includedNamespaces: ["default"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: mariadb
+              pre:
+                - exec:
+                    container: mariadb
+                    timeout: 10m
+                    onError: Fail
+                    command:
+                      - /bin/bash
+                      - -c
+                      - mysqldump -u root -p"$(cat /opt/bitnami/mariadb/secrets/mariadb-root-password/*)" --all-databases | gzip > /bitnami/mariadb/velero-backup.sql.gz
+              post:
+                - exec:
+                    container: mariadb
+                    timeout: 1m
+                    onError: Continue
+                    command:
+                      - /bin/bash
+                      - -c
+                      - rm -f /bitnami/mariadb/velero-backup.sql.gz
+            - name: metabase-pg-dump
+              includedNamespaces: ["default"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/instance: metabase-postgresql
+              pre:
+                - exec:
+                    container: postgresql
+                    timeout: 10m
+                    onError: Fail
+                    command:
+                      - /bin/bash
+                      - -c
+                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+              post:
+                - exec:
+                    container: postgresql
+                    timeout: 1m
+                    onError: Continue
+                    command:
+                      - /bin/bash
+                      - -c
+                      - rm -f /bitnami/postgresql/velero-backup.sql.gz
+            - name: prefect-pg-dump
+              includedNamespaces: ["default"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/instance: prefect
+              pre:
+                - exec:
+                    container: postgresql
+                    timeout: 10m
+                    onError: Fail
+                    command:
+                      - /bin/bash
+                      - -c
+                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+              post:
+                - exec:
+                    container: postgresql
+                    timeout: 1m
+                    onError: Continue
+                    command:
+                      - /bin/bash
+                      - -c
+                      - rm -f /bitnami/postgresql/velero-backup.sql.gz
+
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
+      name: weekly-default
+      namespace: velero
+    spec:
+      schedule: "0 5 * * 0"
+      template:
+        includedNamespaces: ["default"]
+        ttl: 2160h
         snapshotVolumes: false
         defaultVolumesToFsBackup: true
         hooks:
