@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: ListenerSet
 metadata:
-  name: doip-server-tcp-listeners
+  name: tcp-listeners
   namespace: default
 spec:
   parentRef:

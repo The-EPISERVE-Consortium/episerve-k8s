@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: TLSRoute
 metadata:
-  name: doip-server-tlsroute
+  name: tlsroute
   namespace: default
 spec:
   parentRefs:
