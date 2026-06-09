@@ -1,0 +1,28 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: doip-server-tcp-listeners
+  namespace: default
+spec:
+  parentRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: shared-public-gateway
+    namespace: kgateway-system
+  listeners:
+    - name: doip
+      port: 3567
+      protocol: TLS
+      tls:
+        mode: Passthrough
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: doip-compat
+      port: 3568
+      protocol: TLS
+      tls:
+        mode: Passthrough
+      allowedRoutes:
+        namespaces:
+          from: Same

@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: doip-server-tlsroute
+  namespace: default
+spec:
+  parentRefs:
+    - name: doip-server-tcp-listeners
+      kind: ListenerSet
+      group: gateway.networking.k8s.io
+      sectionName: doip
+    - name: doip-server-tcp-listeners
+      kind: ListenerSet
+      group: gateway.networking.k8s.io
+      sectionName: doip-compat
+  hostnames:
+    - doip.episerve.zib.de
+  rules:
+    - backendRefs:
+        - name: doip-server
+          port: 3567

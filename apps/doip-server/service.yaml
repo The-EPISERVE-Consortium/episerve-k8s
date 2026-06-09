@@ -10,3 +10,9 @@ spec:
     - name: http
       port: 80
       targetPort: 80
+    - name: doip
+      port: 3567
+      targetPort: 3567
+    - name: doip-compat
+      port: 3568
+      targetPort: 3568

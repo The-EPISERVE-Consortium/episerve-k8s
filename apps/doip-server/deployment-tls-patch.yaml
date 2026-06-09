@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doip-server
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - name: doip-server
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /app/certs/server.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: tls-certs
+              mountPath: /app/certs/server.key
+              subPath: tls.key
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: doip-server-tls

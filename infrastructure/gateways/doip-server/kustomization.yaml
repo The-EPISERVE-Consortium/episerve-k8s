@@ -4,6 +4,9 @@ namespace: default
 namePrefix: doip-server-
 components:
   - ../../base/gateway
+resources:
+  - listenerset-tcp.yaml
+  - tlsroute.yaml
 configMapGenerator:
   - name: gateway-config
     literals:
