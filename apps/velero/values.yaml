@@ -1,0 +1,100 @@
+configuration:
+  features: EnableCSI
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: episerve-backups
+      config:
+        region: default
+        s3ForcePathStyle: "true"
+        s3Url: https://rise-s3.zib.de
+  volumeSnapshotLocation:
+    - name: csi
+      provider: csi
+
+credentials:
+  useSecret: true
+  existingSecret: velero-s3-credentials
+
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+nodeAgent:
+  enabled: true
+
+extraObjects:
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
+      name: daily-ckan
+      namespace: velero
+    spec:
+      schedule: "0 2 * * *"
+      template:
+        includedNamespaces: ["ckan"]
+        ttl: 720h
+        snapshotVolumes: true
+        hooks:
+          resources:
+            - name: pg-checkpoint
+              includedNamespaces: ["ckan"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql
+              pre:
+                - exec:
+                    container: postgresql
+                    command: ["/bin/bash", "-c", "psql -U postgres -c 'CHECKPOINT;'"]
+
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
+      name: daily-openproject
+      namespace: velero
+    spec:
+      schedule: "30 2 * * *"
+      template:
+        includedNamespaces: ["openproject"]
+        ttl: 720h
+        snapshotVolumes: true
+        hooks:
+          resources:
+            - name: pg-checkpoint
+              includedNamespaces: ["openproject"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql
+              pre:
+                - exec:
+                    container: postgresql
+                    command: ["/bin/bash", "-c", "psql -U postgres -c 'CHECKPOINT;'"]
+
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
+      name: daily-default
+      namespace: velero
+    spec:
+      schedule: "0 3 * * *"
+      template:
+        includedNamespaces: ["default"]
+        ttl: 720h
+        snapshotVolumes: true
+
+  - apiVersion: velero.io/v1
+    kind: Schedule
+    metadata:
+      name: weekly-kube-system
+      namespace: velero
+    spec:
+      schedule: "0 4 * * 0"
+      template:
+        includedNamespaces: ["kube-system"]
+        includedResources: ["secrets"]
+        ttl: 2160h
+        snapshotVolumes: false

@@ -5,5 +5,6 @@ resources:
   - cert-manager
   - gateways
   - gateway-websocket-policy.yaml
+  - snapshot-controller
   - argocd-apps
   
