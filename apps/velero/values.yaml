@@ -55,7 +55,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$(cat /opt/bitnami/postgresql/secrets/postgres-password) pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -93,7 +93,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$(cat /opt/bitnami/postgresql/secrets/postgres-password) pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -132,7 +132,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$POSTGRES_POSTGRES_PASSWORD pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -170,7 +170,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$POSTGRES_POSTGRES_PASSWORD pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
