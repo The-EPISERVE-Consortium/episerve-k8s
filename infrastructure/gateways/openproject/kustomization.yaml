@@ -4,7 +4,6 @@ namespace: openproject
 namePrefix: openproject-
 components:
   - ../../base/gateway
-  - ../../base/gateway-zib-only
 configMapGenerator:
   - name: gateway-config
     literals:
