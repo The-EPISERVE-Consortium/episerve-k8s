@@ -247,6 +247,7 @@ extraObjects:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/instance: prefect
+                  app.kubernetes.io/name: postgresql
               pre:
                 - exec:
                     container: postgresql
@@ -331,6 +332,7 @@ extraObjects:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/instance: prefect
+                  app.kubernetes.io/name: postgresql
               pre:
                 - exec:
                     container: postgresql
