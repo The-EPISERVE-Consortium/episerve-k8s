@@ -14,6 +14,7 @@ spec:
             - --user
             - --quiet
             - git+https://github.com/DataShades/ckanext-parquet.git
+            - git+https://github.com/The-EPISERVE-Consortium/ckanext-episerve-theme.git
           env:
             - name: HOME
               value: /app
@@ -24,7 +25,7 @@ spec:
         - name: ckan
           env:
             - name: CKAN__PLUGINS
-              value: "envvars activity image_view text_view datatables_view datastore xloader parquet_view"
+              value: "envvars episerve_theme activity image_view text_view datatables_view datastore xloader parquet_view"
           volumeMounts:
             - name: ckan-user-local
               mountPath: /app/.local
