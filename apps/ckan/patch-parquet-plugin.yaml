@@ -26,6 +26,8 @@ spec:
           env:
             - name: CKAN__PLUGINS
               value: "envvars episerve_theme activity image_view text_view datatables_view datastore xloader parquet_view"
+            - name: CKAN___CKAN__PLUGINS
+              value: "envvars episerve_theme activity image_view text_view datatables_view datastore xloader parquet_view"
           volumeMounts:
             - name: ckan-user-local
               mountPath: /app/.local
