@@ -209,7 +209,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - mysqldump -u root -p"$(cat /opt/bitnami/mariadb/secrets/mariadb-root-password/*)" --all-databases | gzip > /bitnami/mariadb/velero-backup.sql.gz
+                      - mysqldump -u root -p"$(cat $MARIADB_ROOT_PASSWORD_FILE)" --all-databases | gzip > /bitnami/mariadb/velero-backup.sql.gz
               post:
                 - exec:
                     container: mariadb
@@ -232,7 +232,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$(cat /opt/bitnami/postgresql/secrets/postgres-password) pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -256,7 +256,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$POSTGRES_PASSWORD pg_dump -U prefect prefect | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -294,7 +294,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - mysqldump -u root -p"$(cat /opt/bitnami/mariadb/secrets/mariadb-root-password/*)" --all-databases | gzip > /bitnami/mariadb/velero-backup.sql.gz
+                      - mysqldump -u root -p"$(cat $MARIADB_ROOT_PASSWORD_FILE)" --all-databases | gzip > /bitnami/mariadb/velero-backup.sql.gz
               post:
                 - exec:
                     container: mariadb
@@ -317,7 +317,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$(cat /opt/bitnami/postgresql/secrets/postgres-password) pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
@@ -341,7 +341,7 @@ extraObjects:
                     command:
                       - /bin/bash
                       - -c
-                      - pg_dumpall -U postgres | gzip > /bitnami/postgresql/velero-backup.sql.gz
+                      - PGPASSWORD=$POSTGRES_PASSWORD pg_dump -U prefect prefect | gzip > /bitnami/postgresql/velero-backup.sql.gz
               post:
                 - exec:
                     container: postgresql
