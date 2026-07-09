@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: episerve-monitoring-overview-dashboard
+  namespace: kube-prometheus
+  labels:
+    grafana_dashboard: "1"
+data:
+  episerve-monitoring-overview-dashboard.json: |
+    {
+      "uid": "episerve-monitoring-overview",
+      "title": "EPISERVE Monitoring Overview",
+      "tags": ["episerve", "monitoring", "alerts"],
+      "timezone": "browser",
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "version": 1,
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {
+              "text": "Prometheus",
+              "value": "prometheus"
+            }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "EPISERVE Alerts Firing",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=~\"warning|critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"})",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 2,
+          "title": "EPISERVE Alerts by Service",
+          "type": "timeseries",
+          "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (service, alertname) (ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=~\"warning|critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"})",
+              "legendFormat": "{{service}} / {{alertname}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Pods Not Ready",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum((sum by (namespace, pod) (kube_pod_status_ready{namespace=~\"ckan|velero|argocd|openproject|default\", condition=\"true\"} == 0) * on (namespace, pod) group_left() sum by (namespace, pod) (kube_pod_status_phase{namespace=~\"ckan|velero|argocd|openproject|default\", phase=~\"Pending|Running|Unknown\"} == 1)) > 0)",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 4,
+          "title": "Containers Waiting",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (namespace, reason) (kube_pod_container_status_waiting_reason{namespace=~\"ckan|velero|argocd|openproject|default\", reason=~\"CrashLoopBackOff|ImagePullBackOff|ErrImagePull\"})",
+              "legendFormat": "{{namespace}} / {{reason}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Deployment Availability",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_deployment_status_replicas_available{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"}",
+              "legendFormat": "{{namespace}} / {{deployment}} available"
+            },
+            {
+              "refId": "B",
+              "expr": "kube_deployment_spec_replicas{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"}",
+              "legendFormat": "{{namespace}} / {{deployment}} desired"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 6,
+          "title": "StatefulSet Readiness",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_statefulset_status_replicas_ready{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"}",
+              "legendFormat": "{{namespace}} / {{statefulset}} ready"
+            },
+            {
+              "refId": "B",
+              "expr": "kube_statefulset_replicas{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"}",
+              "legendFormat": "{{namespace}} / {{statefulset}} desired"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Velero Node-Agent Ready",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_daemonset_status_number_ready{namespace=\"velero\", daemonset=\"node-agent\"}",
+              "legendFormat": "ready"
+            },
+            {
+              "refId": "B",
+              "expr": "kube_daemonset_status_desired_number_scheduled{namespace=\"velero\", daemonset=\"node-agent\"}",
+              "legendFormat": "desired"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 8,
+          "title": "Alertmanager Email Notifications",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(alertmanager_notifications_total{integration=\"email\"}[30m])",
+              "legendFormat": "email notifications"
+            },
+            {
+              "refId": "B",
+              "expr": "increase(alertmanager_notifications_failed_total{integration=\"email\"}[30m])",
+              "legendFormat": "email failures"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "drawStyle": "line"
+              }
+            }
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        }
+      ]
+    }
