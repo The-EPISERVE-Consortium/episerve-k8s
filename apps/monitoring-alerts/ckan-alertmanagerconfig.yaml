@@ -19,7 +19,7 @@ spec:
   receivers:
     - name: email
       emailConfigs:
-        - to: conrad@math.fu-berlin.de
+        - to: conrad@zib.de
           from: tofconrad@googlemail.com
           smarthost: smtp.gmail.com:587
           authUsername: tofconrad@googlemail.com
