@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ckan-critical-alerts
+  namespace: ckan
+spec:
+  groups:
+    - name: ckan-critical
+      rules:
+        - alert: CkanPodNotReady
+          expr: |
+            (
+              sum by (namespace, pod) (kube_pod_status_ready{namespace="ckan", condition="true"} == 0)
+              * on (namespace, pod) group_left()
+              sum by (namespace, pod) (kube_pod_status_phase{namespace="ckan", phase=~"Pending|Running|Unknown"} == 1)
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+            namespace: ckan
+          annotations:
+            summary: CKAN pod is not ready
+            description: Pod {{ $labels.pod }} in namespace ckan has not been ready for 10 minutes.
+
+        - alert: CkanContainerWaiting
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace="ckan", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            namespace: ckan
+          annotations:
+            summary: CKAN container is stuck
+            description: Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting with reason {{ $labels.reason }}.
+
+        - alert: CkanDeploymentUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="ckan"} < kube_deployment_spec_replicas{namespace="ckan"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+          annotations:
+            summary: CKAN deployment has unavailable replicas
+            description: Deployment {{ $labels.deployment }} in namespace ckan has fewer available replicas than desired for 10 minutes.
+
+        - alert: CkanStatefulSetUnavailable
+          expr: |
+            kube_statefulset_status_replicas_ready{namespace="ckan"} < kube_statefulset_replicas{namespace="ckan"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+          annotations:
+            summary: CKAN StatefulSet has unavailable replicas
+            description: StatefulSet {{ $labels.statefulset }} in namespace ckan has fewer ready replicas than desired for 10 minutes.
+
+        - alert: CkanJobFailed
+          expr: |
+            kube_job_failed{namespace="ckan"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            namespace: ckan
+          annotations:
+            summary: CKAN job failed
+            description: Job {{ $labels.job_name }} in namespace ckan has failed.

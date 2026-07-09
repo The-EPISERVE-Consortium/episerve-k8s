@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: ckan-email-alerts
+  namespace: ckan
+spec:
+  route:
+    receiver: email
+    groupBy:
+      - namespace
+      - alertname
+    groupWait: 30s
+    groupInterval: 10m
+    repeatInterval: 12h
+    matchers:
+      - name: severity
+        value: warning|critical
+        matchType: =~
+  receivers:
+    - name: email
+      emailConfigs:
+        - to: conrad@math.fu-berlin.de
+          from: tofconrad@googlemail.com
+          smarthost: smtp.gmail.com:587
+          authUsername: tofconrad@googlemail.com
+          authPassword:
+            name: alertmanager-smtp
+            key: password
+          requireTLS: true
