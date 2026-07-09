@@ -4,6 +4,7 @@ namespace: velero
 resources:
   - namespace.yaml
   - sealed-secret.yaml
+  - servicemonitor.yaml
 helmCharts:
   - name: velero
     repo: https://vmware-tanzu.github.io/helm-charts
