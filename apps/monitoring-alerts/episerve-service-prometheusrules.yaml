@@ -1,0 +1,264 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: episerve-service-alerts
+  namespace: ckan
+spec:
+  groups:
+    - name: episerve-velero
+      rules:
+        - alert: VeleroPodNotReady
+          expr: |
+            (
+              sum by (namespace, pod) (kube_pod_status_ready{namespace="velero", condition="true"} == 0)
+              * on (namespace, pod) group_left()
+              sum by (namespace, pod) (kube_pod_status_phase{namespace="velero", phase=~"Pending|Running|Unknown"} == 1)
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: velero
+            service: velero
+          annotations:
+            summary: Velero pod is not ready
+            description: Pod {{ $labels.pod }} in namespace velero has not been ready for 10 minutes.
+
+        - alert: VeleroContainerWaiting
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace="velero", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: velero
+            service: velero
+          annotations:
+            summary: Velero container is stuck
+            description: Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting with reason {{ $labels.reason }}.
+
+        - alert: VeleroDeploymentUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="velero", deployment=~"velero|snapshot-controller"} < kube_deployment_spec_replicas{namespace="velero", deployment=~"velero|snapshot-controller"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: velero
+            service: velero
+          annotations:
+            summary: Velero deployment has unavailable replicas
+            description: Deployment {{ $labels.deployment }} in namespace velero has fewer available replicas than desired for 10 minutes.
+
+        - alert: VeleroNodeAgentUnavailable
+          expr: |
+            kube_daemonset_status_number_ready{namespace="velero", daemonset="node-agent"} < kube_daemonset_status_desired_number_scheduled{namespace="velero", daemonset="node-agent"}
+          for: 15m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: velero
+            service: velero
+          annotations:
+            summary: Velero node-agent has unavailable replicas
+            description: Velero node-agent has fewer ready pods than desired for 15 minutes.
+
+        - alert: VeleroJobFailed
+          expr: |
+            kube_job_failed{namespace="velero"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: velero
+            service: velero
+          annotations:
+            summary: Velero job failed
+            description: Job {{ $labels.job_name }} in namespace velero has failed.
+
+    - name: episerve-argocd
+      rules:
+        - alert: ArgoCdPodNotReady
+          expr: |
+            (
+              sum by (namespace, pod) (kube_pod_status_ready{namespace="argocd", condition="true"} == 0)
+              * on (namespace, pod) group_left()
+              sum by (namespace, pod) (kube_pod_status_phase{namespace="argocd", phase=~"Pending|Running|Unknown"} == 1)
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: argocd
+            service: argocd
+          annotations:
+            summary: ArgoCD pod is not ready
+            description: Pod {{ $labels.pod }} in namespace argocd has not been ready for 10 minutes.
+
+        - alert: ArgoCdContainerWaiting
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace="argocd", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: argocd
+            service: argocd
+          annotations:
+            summary: ArgoCD container is stuck
+            description: Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting with reason {{ $labels.reason }}.
+
+        - alert: ArgoCdDeploymentUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="argocd"} < kube_deployment_spec_replicas{namespace="argocd"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: argocd
+            service: argocd
+          annotations:
+            summary: ArgoCD deployment has unavailable replicas
+            description: Deployment {{ $labels.deployment }} in namespace argocd has fewer available replicas than desired for 10 minutes.
+
+        - alert: ArgoCdApplicationControllerUnavailable
+          expr: |
+            kube_statefulset_status_replicas_ready{namespace="argocd", statefulset="argocd-application-controller"} < kube_statefulset_replicas{namespace="argocd", statefulset="argocd-application-controller"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: argocd
+            service: argocd
+          annotations:
+            summary: ArgoCD application controller is unavailable
+            description: StatefulSet argocd-application-controller has fewer ready replicas than desired for 10 minutes.
+
+    - name: episerve-openproject
+      rules:
+        - alert: OpenProjectPodNotReady
+          expr: |
+            (
+              sum by (namespace, pod) (kube_pod_status_ready{namespace="openproject", condition="true"} == 0)
+              * on (namespace, pod) group_left()
+              sum by (namespace, pod) (kube_pod_status_phase{namespace="openproject", phase=~"Pending|Running|Unknown"} == 1)
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: openproject
+            service: openproject
+          annotations:
+            summary: OpenProject pod is not ready
+            description: Pod {{ $labels.pod }} in namespace openproject has not been ready for 10 minutes.
+
+        - alert: OpenProjectContainerWaiting
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace="openproject", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: openproject
+            service: openproject
+          annotations:
+            summary: OpenProject container is stuck
+            description: Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting with reason {{ $labels.reason }}.
+
+        - alert: OpenProjectDeploymentUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="openproject"} < kube_deployment_spec_replicas{namespace="openproject"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: openproject
+            service: openproject
+          annotations:
+            summary: OpenProject deployment has unavailable replicas
+            description: Deployment {{ $labels.deployment }} in namespace openproject has fewer available replicas than desired for 10 minutes.
+
+        - alert: OpenProjectStatefulSetUnavailable
+          expr: |
+            kube_statefulset_status_replicas_ready{namespace="openproject"} < kube_statefulset_replicas{namespace="openproject"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: openproject
+            service: openproject
+          annotations:
+            summary: OpenProject StatefulSet has unavailable replicas
+            description: StatefulSet {{ $labels.statefulset }} in namespace openproject has fewer ready replicas than desired for 10 minutes.
+
+        - alert: OpenProjectJobFailed
+          expr: |
+            kube_job_failed{namespace="openproject"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: openproject
+            service: openproject
+          annotations:
+            summary: OpenProject job failed
+            description: Job {{ $labels.job_name }} in namespace openproject has failed.
+
+    - name: episerve-default-data
+      rules:
+        - alert: DefaultDataPodNotReady
+          expr: |
+            (
+              sum by (namespace, pod) (kube_pod_status_ready{namespace="default", pod=~"mariadb-.*|metabase-.*|metabase-postgresql-.*|prefect-postgresql-.*|prefect-server-.*|prefect-worker-.*", condition="true"} == 0)
+              * on (namespace, pod) group_left()
+              sum by (namespace, pod) (kube_pod_status_phase{namespace="default", pod=~"mariadb-.*|metabase-.*|metabase-postgresql-.*|prefect-postgresql-.*|prefect-server-.*|prefect-worker-.*", phase=~"Pending|Running|Unknown"} == 1)
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+            namespace: ckan
+            target_namespace: default
+            service: default-data
+          annotations:
+            summary: Default namespace data-service pod is not ready
+            description: Pod {{ $labels.pod }} in namespace default has not been ready for 10 minutes.
+
+        - alert: DefaultDataContainerWaiting
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace="default", pod=~"mariadb-.*|metabase-.*|metabase-postgresql-.*|prefect-postgresql-.*|prefect-server-.*|prefect-worker-.*", reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: default
+            service: default-data
+          annotations:
+            summary: Default namespace data-service container is stuck
+            description: Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting with reason {{ $labels.reason }}.
+
+        - alert: DefaultDataDeploymentUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="default", deployment=~"metabase|prefect-server|prefect-worker"} < kube_deployment_spec_replicas{namespace="default", deployment=~"metabase|prefect-server|prefect-worker"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: default
+            service: default-data
+          annotations:
+            summary: Default namespace data-service deployment has unavailable replicas
+            description: Deployment {{ $labels.deployment }} in namespace default has fewer available replicas than desired for 10 minutes.
+
+        - alert: DefaultDataStatefulSetUnavailable
+          expr: |
+            kube_statefulset_status_replicas_ready{namespace="default", statefulset=~"mariadb|metabase-postgresql|prefect-postgresql"} < kube_statefulset_replicas{namespace="default", statefulset=~"mariadb|metabase-postgresql|prefect-postgresql"}
+          for: 10m
+          labels:
+            severity: critical
+            namespace: ckan
+            target_namespace: default
+            service: default-data
+          annotations:
+            summary: Default namespace data-service StatefulSet has unavailable replicas
+            description: StatefulSet {{ $labels.statefulset }} in namespace default has fewer ready replicas than desired for 10 minutes.

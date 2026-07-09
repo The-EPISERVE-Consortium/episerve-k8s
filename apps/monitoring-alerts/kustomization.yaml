@@ -4,3 +4,4 @@ resources:
   - ckan-alertmanager-smtp-sealedsecret.yaml
   - ckan-alertmanagerconfig.yaml
   - ckan-prometheusrules.yaml
+  - episerve-service-prometheusrules.yaml
