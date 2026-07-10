@@ -14,7 +14,7 @@ data:
       "timezone": "browser",
       "refresh": "30s",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 5,
       "time": {
         "from": "now-7d",
         "to": "now"
@@ -92,436 +92,16 @@ data:
           }
         },
         {
-          "id": 2,
-          "title": "Existing Backups",
+          "id": 15,
+          "title": "Scrape Up",
           "type": "stat",
           "gridPos": { "x": 5, "y": 0, "w": 4, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
-              "expr": "velero_backup_total",
-              "instant": true
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null }
-                ]
-              }
-            }
-          },
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"] },
-            "colorMode": "value",
-            "graphMode": "none",
-            "textMode": "value_and_name"
-          }
-        },
-        {
-          "id": 3,
-          "title": "Last Backup Status",
-          "type": "stat",
-          "gridPos": { "x": 9, "y": 0, "w": 7, "h": 4 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_backup_last_status{schedule!=\"\", schedule=~\"$schedule\"}",
-              "instant": true,
-              "legendFormat": "{{schedule}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "mappings": [
-                {
-                  "type": "value",
-                  "options": {
-                    "1": { "text": "Success", "color": "green" },
-                    "0": { "text": "Failure", "color": "red" }
-                  }
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "red", "value": null },
-                  { "color": "green", "value": 1 }
-                ]
-              }
-            }
-          },
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"] },
-            "colorMode": "background",
-            "graphMode": "none",
-            "textMode": "value_and_name"
-          }
-        },
-        {
-          "id": 4,
-          "title": "Last Successful Backup Age",
-          "type": "stat",
-          "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "time() - velero_backup_last_successful_timestamp{schedule!=\"\", schedule=~\"$schedule\"}",
-              "instant": true,
-              "legendFormat": "{{schedule}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "yellow", "value": 172800 },
-                  { "color": "red", "value": 691200 }
-                ]
-              }
-            }
-          },
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"] },
-            "colorMode": "background",
-            "graphMode": "none",
-            "textMode": "value_and_name"
-          }
-        },
-        {
-          "id": 5,
-          "title": "Backup Results",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "increase(velero_backup_success_total{schedule!=\"\", schedule=~\"$schedule\"}[7d])",
-              "legendFormat": "{{schedule}} success"
-            },
-            {
-              "refId": "B",
-              "expr": "increase(velero_backup_failure_total{schedule!=\"\", schedule=~\"$schedule\"}[7d])",
-              "legendFormat": "{{schedule}} failed"
-            },
-            {
-              "refId": "C",
-              "expr": "increase(velero_backup_partial_failure_total{schedule!=\"\", schedule=~\"$schedule\"}[7d])",
-              "legendFormat": "{{schedule}} partial"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 6,
-          "title": "Backup Warnings and Item Errors",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_backup_warning_total{schedule!=\"\", schedule=~\"$schedule\"}",
-              "legendFormat": "{{schedule}} warnings"
-            },
-            {
-              "refId": "B",
-              "expr": "velero_backup_items_errors{schedule!=\"\", schedule=~\"$schedule\"}",
-              "legendFormat": "{{schedule}} item errors"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 7,
-          "title": "Backup Duration",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_backup_duration_seconds_sum{schedule!=\"\", schedule=~\"$schedule\"} / clamp_min(velero_backup_duration_seconds_count{schedule!=\"\", schedule=~\"$schedule\"}, 1)",
-              "legendFormat": "{{schedule}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 8,
-          "title": "Items Backed Up",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_backup_items_total{schedule!=\"\", schedule=~\"$schedule\"}",
-              "legendFormat": "{{schedule}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 9,
-          "title": "Backup Metadata Tarball Size",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_backup_tarball_size_bytes{schedule!=\"\", schedule=~\"$schedule\"}",
-              "legendFormat": "{{schedule}}"
-            }
-          ],
-          "description": "This is the Velero metadata tarball size, not total object-store usage.",
-          "fieldConfig": {
-            "defaults": {
-              "unit": "bytes",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 10,
-          "title": "Kopia Storage Transfer",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "increase(kopia_blob_upload_bytes_total[6h])",
-              "legendFormat": "uploaded bytes"
-            },
-            {
-              "refId": "B",
-              "expr": "increase(kopia_blob_download_full_blob_bytes_total[6h]) + increase(kopia_blob_download_partial_blob_bytes_total[6h])",
-              "legendFormat": "downloaded bytes"
-            }
-          ],
-          "description": "Transfer activity seen by Kopia. This is not current repository size.",
-          "fieldConfig": {
-            "defaults": {
-              "unit": "bytes",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 11,
-          "title": "Kopia Storage Errors",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "increase(kopia_blob_errors_total[6h])",
-              "legendFormat": "{{method}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 12,
-          "title": "Repository Maintenance Duration",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "velero_repo_maintenance_duration_seconds_sum / clamp_min(velero_repo_maintenance_duration_seconds_count, 1)",
-              "legendFormat": "{{repository_name}}"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 13,
-          "title": "Velero Deployment Availability",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 36, "w": 8, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "kube_deployment_status_replicas_available{namespace=\"velero\", deployment=~\"velero|snapshot-controller\"}",
-              "legendFormat": "{{deployment}} available"
-            },
-            {
-              "refId": "B",
-              "expr": "kube_deployment_spec_replicas{namespace=\"velero\", deployment=~\"velero|snapshot-controller\"}",
-              "legendFormat": "{{deployment}} desired"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 14,
-          "title": "Velero Node-Agent Ready",
-          "type": "timeseries",
-          "gridPos": { "x": 8, "y": 36, "w": 8, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "kube_daemonset_status_number_ready{namespace=\"velero\", daemonset=\"node-agent\"}",
-              "legendFormat": "ready"
-            },
-            {
-              "refId": "B",
-              "expr": "kube_daemonset_status_desired_number_scheduled{namespace=\"velero\", daemonset=\"node-agent\"}",
-              "legendFormat": "desired"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
-              }
-            }
-          },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 15,
-          "title": "Velero Scrape Up",
-          "type": "stat",
-          "gridPos": { "x": 16, "y": 36, "w": 8, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "targets": [
-            {
-              "refId": "A",
               "expr": "up{namespace=\"velero\", service=\"velero\"}",
-              "instant": true,
-              "legendFormat": "{{pod}}"
+              "instant": true
             }
           ],
           "fieldConfig": {
@@ -551,6 +131,638 @@ data:
             "graphMode": "none",
             "textMode": "value_and_name"
           }
+        },
+        {
+          "id": 13,
+          "title": "Deployment Ready",
+          "type": "stat",
+          "gridPos": { "x": 9, "y": 0, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_deployment_status_replicas_available{namespace=\"velero\", deployment=~\"velero|snapshot-controller\"} / kube_deployment_spec_replicas{namespace=\"velero\", deployment=~\"velero|snapshot-controller\"}",
+              "instant": true,
+              "legendFormat": "{{deployment}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 1,
+                    "to": 1,
+                    "result": { "text": "Ready", "color": "green" }
+                  }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0,
+                    "to": 0.999,
+                    "result": { "text": "Degraded", "color": "red" }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 14,
+          "title": "Node-Agent Ready",
+          "type": "stat",
+          "gridPos": { "x": 15, "y": 0, "w": 5, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_daemonset_status_number_ready{namespace=\"velero\", daemonset=\"node-agent\"} / kube_daemonset_status_desired_number_scheduled{namespace=\"velero\", daemonset=\"node-agent\"}",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 1,
+                    "to": 1,
+                    "result": { "text": "Ready", "color": "green" }
+                  }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0,
+                    "to": 0.999,
+                    "result": { "text": "Degraded", "color": "red" }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Existing Backups",
+          "type": "stat",
+          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "velero_backup_total",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "text", "value": null }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 20,
+          "title": "Schedule Status",
+          "type": "row",
+          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "id": 3,
+          "title": "Daily Schedules",
+          "type": "table",
+          "gridPos": { "x": 0, "y": 5, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "velero_backup_last_status{schedule=~\"daily-.*\", schedule=~\"$schedule\"}",
+              "instant": true,
+              "format": "table"
+            },
+            {
+              "refId": "B",
+              "expr": "time() - velero_backup_last_successful_timestamp{schedule=~\"daily-.*\", schedule=~\"$schedule\"}",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "container": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "pod": true,
+                  "service": true
+                },
+                "renameByName": {
+                  "schedule": "Schedule",
+                  "Value #A": "Last Status",
+                  "Value #B": "Last Successful Age"
+                },
+                "indexByName": {
+                  "Schedule": 0,
+                  "Last Status": 1,
+                  "Last Successful Age": 2
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "none" },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Last Status" },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": { "text": "Success", "color": "green" },
+                          "0": { "text": "Failure", "color": "red" }
+                        }
+                      }
+                    ]
+                  },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": 1 }
+                  ] } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Last Successful Age" },
+                "properties": [
+                  { "id": "unit", "value": "s" },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 129600 },
+                    { "color": "red", "value": 259200 }
+                  ] } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [{ "displayName": "Schedule", "desc": false }]
+          }
+        },
+        {
+          "id": 17,
+          "title": "Weekly Schedules",
+          "type": "table",
+          "gridPos": { "x": 12, "y": 5, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "velero_backup_last_status{schedule=~\"weekly-.*\", schedule=~\"$schedule\"}",
+              "instant": true,
+              "format": "table"
+            },
+            {
+              "refId": "B",
+              "expr": "time() - velero_backup_last_successful_timestamp{schedule=~\"weekly-.*\", schedule=~\"$schedule\"}",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "container": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "pod": true,
+                  "service": true
+                },
+                "renameByName": {
+                  "schedule": "Schedule",
+                  "Value #A": "Last Status",
+                  "Value #B": "Last Successful Age"
+                },
+                "indexByName": {
+                  "Schedule": 0,
+                  "Last Status": 1,
+                  "Last Successful Age": 2
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "none" },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Last Status" },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": { "text": "Success", "color": "green" },
+                          "0": { "text": "Failure", "color": "red" }
+                        }
+                      }
+                    ]
+                  },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": 1 }
+                  ] } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Last Successful Age" },
+                "properties": [
+                  { "id": "unit", "value": "s" },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 691200 },
+                    { "color": "red", "value": 864000 }
+                  ] } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [{ "displayName": "Schedule", "desc": false }]
+          }
+        },
+        {
+          "id": 21,
+          "title": "Backup Trends",
+          "type": "row",
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 1 },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "id": 5,
+          "title": "Daily Backup Results (last 7 runs)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(velero_backup_success_total{schedule=~\"daily-.*\", schedule=~\"$schedule\"}[1d])",
+              "legendFormat": "{{schedule}} success"
+            },
+            {
+              "refId": "B",
+              "expr": "increase(velero_backup_failure_total{schedule=~\"daily-.*\", schedule=~\"$schedule\"}[1d]) + increase(velero_backup_partial_failure_total{schedule=~\"daily-.*\", schedule=~\"$schedule\"}[1d])",
+              "legendFormat": "{{schedule}} failed/partial"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "lineWidth": 0,
+                "stacking": { "mode": "none" }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": "/success$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+              },
+              {
+                "matcher": { "id": "byRegexp", "options": "/failed\\/partial$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              }
+            ]
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 6,
+          "title": "Weekly Backup Results (last 4 runs)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(velero_backup_success_total{schedule=~\"weekly-.*\", schedule=~\"$schedule\"}[7d])",
+              "legendFormat": "{{schedule}} success"
+            },
+            {
+              "refId": "B",
+              "expr": "increase(velero_backup_failure_total{schedule=~\"weekly-.*\", schedule=~\"$schedule\"}[7d]) + increase(velero_backup_partial_failure_total{schedule=~\"weekly-.*\", schedule=~\"$schedule\"}[7d])",
+              "legendFormat": "{{schedule}} failed/partial"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "lineWidth": 0,
+                "stacking": { "mode": "none" }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": "/success$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+              },
+              {
+                "matcher": { "id": "byRegexp", "options": "/failed\\/partial$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              }
+            ]
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Backup Warnings and Item Errors",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 21, "w": 24, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "velero_backup_warning_total{schedule!=\"\", schedule=~\"$schedule\"}",
+              "legendFormat": "{{schedule}} warnings"
+            },
+            {
+              "refId": "B",
+              "expr": "velero_backup_items_errors{schedule!=\"\", schedule=~\"$schedule\"}",
+              "legendFormat": "{{schedule}} item errors"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "drawStyle": "line"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": "/item errors$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              },
+              {
+                "matcher": { "id": "byRegexp", "options": "/warnings$/" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }]
+              }
+            ]
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 22,
+          "title": "Kopia & Repository Internals",
+          "type": "row",
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 1 },
+          "collapsed": true,
+          "panels": [
+            {
+              "id": 8,
+              "title": "Backup Duration",
+              "type": "timeseries",
+              "gridPos": { "x": 0, "y": 29, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "velero_backup_duration_seconds_sum{schedule!=\"\", schedule=~\"$schedule\"} / clamp_min(velero_backup_duration_seconds_count{schedule!=\"\", schedule=~\"$schedule\"}, 1)",
+                  "legendFormat": "{{schedule}}"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            },
+            {
+              "id": 9,
+              "title": "Items Backed Up",
+              "type": "timeseries",
+              "gridPos": { "x": 12, "y": 29, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "velero_backup_items_total{schedule!=\"\", schedule=~\"$schedule\"}",
+                  "legendFormat": "{{schedule}}"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "none",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            },
+            {
+              "id": 10,
+              "title": "Backup Metadata Tarball Size",
+              "type": "timeseries",
+              "gridPos": { "x": 0, "y": 37, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "velero_backup_tarball_size_bytes{schedule!=\"\", schedule=~\"$schedule\"}",
+                  "legendFormat": "{{schedule}}"
+                }
+              ],
+              "description": "This is the Velero metadata tarball size, not total object-store usage.",
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bytes",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            },
+            {
+              "id": 11,
+              "title": "Kopia Storage Transfer",
+              "type": "timeseries",
+              "gridPos": { "x": 12, "y": 37, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "increase(kopia_blob_upload_bytes_total[1h])",
+                  "legendFormat": "uploaded bytes"
+                },
+                {
+                  "refId": "B",
+                  "expr": "increase(kopia_blob_download_full_blob_bytes_total[1h]) + increase(kopia_blob_download_partial_blob_bytes_total[1h])",
+                  "legendFormat": "downloaded bytes"
+                }
+              ],
+              "description": "Transfer activity seen by Kopia, in 1h buckets. This is not current repository size.",
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bytes",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "bars" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            },
+            {
+              "id": 12,
+              "title": "Kopia Storage Errors",
+              "type": "timeseries",
+              "gridPos": { "x": 0, "y": 45, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "increase(kopia_blob_errors_total[1h])",
+                  "legendFormat": "{{method}}"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "none",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "bars" },
+                  "color": { "mode": "fixed", "fixedColor": "red" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            },
+            {
+              "id": 16,
+              "title": "Repository Maintenance Duration",
+              "type": "timeseries",
+              "gridPos": { "x": 12, "y": 45, "w": 12, "h": 8 },
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "targets": [
+                {
+                  "refId": "A",
+                  "expr": "velero_repo_maintenance_duration_seconds_sum / clamp_min(velero_repo_maintenance_duration_seconds_count, 1)",
+                  "legendFormat": "{{repository_name}}"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s",
+                  "custom": { "lineWidth": 2, "fillOpacity": 8, "drawStyle": "line" }
+                }
+              },
+              "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+              }
+            }
+          ]
         }
       ]
     }
