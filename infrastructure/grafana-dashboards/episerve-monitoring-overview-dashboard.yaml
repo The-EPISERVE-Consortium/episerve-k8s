@@ -14,7 +14,7 @@ data:
       "timezone": "browser",
       "refresh": "30s",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 5,
       "time": {
         "from": "now-3h",
         "to": "now"
@@ -42,7 +42,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=~\"warning|critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"})",
+              "expr": "sum(ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=~\"warning|critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"}) or vector(0)",
               "instant": true
             }
           ],
@@ -74,8 +74,13 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (service, alertname) (ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=~\"warning|critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"})",
-              "legendFormat": "{{service}} / {{alertname}}"
+              "expr": "sum by (service, alertname) (ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=\"critical\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"}) or vector(0)",
+              "legendFormat": "{{service}} / {{alertname}} (critical)"
+            },
+            {
+              "refId": "B",
+              "expr": "sum by (service, alertname) (ALERTS{alertstate=\"firing\", namespace=\"ckan\", severity=\"warning\", alertname=~\"Ckan.*|Velero.*|ArgoCd.*|OpenProject.*|DefaultData.*\"}) or vector(0)",
+              "legendFormat": "{{service}} / {{alertname}} (warning)"
             }
           ],
           "fieldConfig": {
@@ -86,7 +91,17 @@ data:
                 "fillOpacity": 10,
                 "drawStyle": "line"
               }
-            }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byFrameRefID", "options": "A" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              },
+              {
+                "matcher": { "id": "byFrameRefID", "options": "B" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+              }
+            ]
           },
           "options": {
             "legend": { "displayMode": "list", "placement": "bottom" },
@@ -97,12 +112,12 @@ data:
           "id": 3,
           "title": "Pods Not Ready",
           "type": "stat",
-          "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+          "gridPos": { "x": 0, "y": 8, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum((sum by (namespace, pod) (kube_pod_status_ready{namespace=~\"ckan|velero|argocd|openproject|default\", condition=\"true\"} == 0) * on (namespace, pod) group_left() sum by (namespace, pod) (kube_pod_status_phase{namespace=~\"ckan|velero|argocd|openproject|default\", phase=~\"Pending|Running|Unknown\"} == 1)) > 0)",
+              "expr": "sum((sum by (namespace, pod) (kube_pod_status_ready{namespace=~\"ckan|velero|argocd|openproject|default\", condition=\"true\"} == 0) * on (namespace, pod) group_left() sum by (namespace, pod) (kube_pod_status_phase{namespace=~\"ckan|velero|argocd|openproject|default\", phase=~\"Pending|Running|Unknown\"} == 1)) > 0) or vector(0)",
               "instant": true
             }
           ],
@@ -130,12 +145,12 @@ data:
           "id": 4,
           "title": "Containers Waiting",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "gridPos": { "x": 6, "y": 8, "w": 18, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (namespace, reason) (kube_pod_container_status_waiting_reason{namespace=~\"ckan|velero|argocd|openproject|default\", reason=~\"CrashLoopBackOff|ImagePullBackOff|ErrImagePull\"})",
+              "expr": "sum by (namespace, reason) (kube_pod_container_status_waiting_reason{namespace=~\"ckan|velero|argocd|openproject|default\", reason=~\"CrashLoopBackOff|ImagePullBackOff|ErrImagePull\"}) or vector(0)",
               "legendFormat": "{{namespace}} / {{reason}}"
             }
           ],
@@ -156,101 +171,254 @@ data:
         },
         {
           "id": 5,
-          "title": "Deployment Availability",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "title": "Deployments Not Ready",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count(kube_deployment_status_replicas_available{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"} < (kube_deployment_spec_replicas{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"} > 0)) or vector(0)",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 9,
+          "title": "Deployment Issues",
+          "type": "table",
+          "gridPos": { "x": 6, "y": 16, "w": 18, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
               "expr": "kube_deployment_status_replicas_available{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"}",
-              "legendFormat": "{{namespace}} / {{deployment}} available"
+              "instant": true,
+              "format": "table"
             },
             {
               "refId": "B",
-              "expr": "kube_deployment_spec_replicas{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"}",
-              "legendFormat": "{{namespace}} / {{deployment}} desired"
+              "expr": "kube_deployment_spec_replicas{namespace=~\"ckan|velero|argocd|openproject|default\", deployment=~\"ckan|ckan-worker-.*|velero|snapshot-controller|argocd-.*|openproject-.*|metabase|prefect-server|prefect-worker\"} > 0",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            { "id": "merge", "options": {} },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "binary",
+                "binary": { "left": "Value #B", "operator": "-", "right": "Value #A" },
+                "alias": "Deficit"
+              }
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "type": "include",
+                "match": "any",
+                "filters": [
+                  { "fieldName": "Deficit", "config": { "id": "greater", "options": { "value": 0 } } }
+                ]
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true, "__name__": true, "container": true, "endpoint": true,
+                  "instance": true, "job": true, "pod": true, "service": true, "Deficit": true
+                },
+                "renameByName": {
+                  "namespace": "Namespace",
+                  "deployment": "Deployment",
+                  "Value #A": "Available",
+                  "Value #B": "Desired"
+                },
+                "indexByName": { "Namespace": 0, "Deployment": 1, "Available": 2, "Desired": 3 }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "none" },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Available" },
+                "properties": [{ "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [{ "displayName": "Namespace", "desc": false }]
+          }
+        },
+        {
+          "id": 6,
+          "title": "StatefulSets Not Ready",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 20, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count(kube_statefulset_status_replicas_ready{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"} < (kube_statefulset_replicas{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"} > 0)) or vector(0)",
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 3 }
+                ]
               }
             }
           },
           "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
           }
         },
         {
-          "id": 6,
-          "title": "StatefulSet Readiness",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "id": 10,
+          "title": "StatefulSet Issues",
+          "type": "table",
+          "gridPos": { "x": 6, "y": 20, "w": 12, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
               "expr": "kube_statefulset_status_replicas_ready{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"}",
-              "legendFormat": "{{namespace}} / {{statefulset}} ready"
+              "instant": true,
+              "format": "table"
             },
             {
               "refId": "B",
-              "expr": "kube_statefulset_replicas{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"}",
-              "legendFormat": "{{namespace}} / {{statefulset}} desired"
+              "expr": "kube_statefulset_replicas{namespace=~\"ckan|argocd|openproject|default\", statefulset=~\"postgres|redis-master|solr|zookeeper|argocd-application-controller|openproject-postgresql|mariadb|metabase-postgresql|prefect-postgresql\"} > 0",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            { "id": "merge", "options": {} },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "binary",
+                "binary": { "left": "Value #B", "operator": "-", "right": "Value #A" },
+                "alias": "Deficit"
+              }
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "type": "include",
+                "match": "any",
+                "filters": [
+                  { "fieldName": "Deficit", "config": { "id": "greater", "options": { "value": 0 } } }
+                ]
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true, "__name__": true, "container": true, "endpoint": true,
+                  "instance": true, "job": true, "pod": true, "service": true, "Deficit": true
+                },
+                "renameByName": {
+                  "namespace": "Namespace",
+                  "statefulset": "StatefulSet",
+                  "Value #A": "Ready",
+                  "Value #B": "Desired"
+                },
+                "indexByName": { "Namespace": 0, "StatefulSet": 1, "Ready": 2, "Desired": 3 }
+              }
             }
           ],
           "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
+            "defaults": { "unit": "none" },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Ready" },
+                "properties": [{ "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
               }
-            }
+            ]
           },
           "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
+            "showHeader": true,
+            "sortBy": [{ "displayName": "Namespace", "desc": false }]
           }
         },
         {
           "id": 7,
           "title": "Velero Node-Agent Ready",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "type": "stat",
+          "gridPos": { "x": 18, "y": 20, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
               "refId": "A",
-              "expr": "kube_daemonset_status_number_ready{namespace=\"velero\", daemonset=\"node-agent\"}",
-              "legendFormat": "ready"
-            },
-            {
-              "refId": "B",
-              "expr": "kube_daemonset_status_desired_number_scheduled{namespace=\"velero\", daemonset=\"node-agent\"}",
-              "legendFormat": "desired"
+              "expr": "kube_daemonset_status_number_ready{namespace=\"velero\", daemonset=\"node-agent\"} / kube_daemonset_status_desired_number_scheduled{namespace=\"velero\", daemonset=\"node-agent\"}",
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "none",
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 8,
-                "drawStyle": "line"
+              "mappings": [
+                {
+                  "type": "range",
+                  "options": { "from": 1, "to": 1, "result": { "text": "Ready", "color": "green" } }
+                },
+                {
+                  "type": "range",
+                  "options": { "from": 0, "to": 0.999, "result": { "text": "Degraded", "color": "red" } }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
               }
             }
           },
           "options": {
-            "legend": { "displayMode": "list", "placement": "bottom" },
-            "tooltip": { "mode": "multi" }
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
           }
         },
         {
@@ -262,12 +430,12 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "increase(alertmanager_notifications_total{integration=\"email\"}[30m])",
+              "expr": "sum(increase(alertmanager_notifications_total{integration=\"email\"}[5m]))",
               "legendFormat": "email notifications"
             },
             {
               "refId": "B",
-              "expr": "increase(alertmanager_notifications_failed_total{integration=\"email\"}[30m])",
+              "expr": "sum(increase(alertmanager_notifications_failed_total{integration=\"email\"}[5m]))",
               "legendFormat": "email failures"
             }
           ],
@@ -279,7 +447,13 @@ data:
                 "fillOpacity": 8,
                 "drawStyle": "line"
               }
-            }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "email failures" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              }
+            ]
           },
           "options": {
             "legend": { "displayMode": "list", "placement": "bottom" },
