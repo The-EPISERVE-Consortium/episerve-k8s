@@ -4,7 +4,6 @@ resources:
   - sealed-secrets
   - cert-manager
   - gateways
-  - gateway-websocket-policy.yaml
   - snapshot-controller
   - grafana-dashboards
   - argocd-apps
