@@ -4,4 +4,5 @@ resources:
   - lakefs-sealed-secret.yaml
   - ckan-sealed-secret.yaml
   - pi-agent-task-sealed-secret.yaml
+  - blackboard-sealed-secret.yaml
 
