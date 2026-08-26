@@ -27,6 +27,17 @@ spec:
               value: "https://doip.episerve.zib.de"
             - name: PREFECT_API_URL
               value: "http://prefect-server.default.svc.cluster.local:4200/api"
+            - name: MARIADB_HOST
+              value: "mariadb.default.svc.cluster.local"
+            - name: BLACKBOARD_DB
+              value: "agent_blackboard"
+            - name: BLACKBOARD_USER
+              value: "blackboard"
+            - name: BLACKBOARD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: blackboard-credentials
+                  key: blackboard-password
             - name: LAKEFS_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
