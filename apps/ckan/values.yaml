@@ -94,10 +94,19 @@ solr:
   # and written here. Solr is not externally exposed.
   auth:
     adminPassword: "Wi0MG59ADVuoZqp74HTEJ1pauHIm8Fth"
+  zookeeper:
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/zookeeper
+      tag: 3.9.3-debian-12-r22
   volumeClaimTemplates:
     storageSize: 8Gi
 
 postgresql:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: 17.6.0
   persistence:
     size: 8Gi
   auth:
@@ -110,3 +119,9 @@ postgresql:
     # Placeholders — ignored when existingSecret is set.
     postgresPassword: "placeholder"
     password: "placeholder"
+
+redis:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis
+    tag: 8.2.1
