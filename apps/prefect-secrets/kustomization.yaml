@@ -5,4 +5,5 @@ resources:
   - ckan-sealed-secret.yaml
   - pi-agent-task-sealed-secret.yaml
   - blackboard-sealed-secret.yaml
+  - github-sealed-secret.yaml
 
