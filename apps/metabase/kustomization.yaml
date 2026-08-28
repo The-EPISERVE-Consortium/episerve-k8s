@@ -17,6 +17,13 @@ helmCharts:
           userPasswordKey: password
           adminPasswordKey: postgres-password
       primary:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         persistence:
           enabled: true
           storageClass: csi-rbd-sc
