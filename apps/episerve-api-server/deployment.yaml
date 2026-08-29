@@ -27,6 +27,8 @@ spec:
               value: "https://doip.episerve.zib.de"
             - name: PREFECT_API_URL
               value: "http://prefect-server.default.svc.cluster.local:4200/api"
+            - name: PREFECT_UI_URL
+              value: "https://prefect.episerve.zib.de/v2"
             - name: MARIADB_HOST
               value: "mariadb.default.svc.cluster.local"
             - name: BLACKBOARD_DB
