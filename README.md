@@ -67,3 +67,25 @@ Key secrets:
 - `lakefs-credentials` (in `default` namespace) — used by Prefect flows and the API server
 - `ckan-credentials` (in `default` namespace) — CKAN API token for the API server and sync flows
 - `apps/prefect-secrets/` — lakeFS and CKAN credentials injected into Prefect flow runs
+
+The Sealed Secrets controller's master key is **not** in this repo or any backup — it
+is held in Bitwarden (`sealed-secrets-master-key.yaml`) and is required before any
+secret (including Velero's S3 credentials) can be decrypted on a rebuilt cluster.
+
+## Backups
+
+Persistent data is backed up by [Velero](apps/velero/) to S3
+(`episerve-backups` at `rise-s3.zib.de`). Coverage:
+
+| Namespace | Daily / weekly | Retention | Notes |
+|---|---|---|---|
+| `ckan` | ✅ / ✅ | 14 d / 90 d | Postgres (`pg_dumpall`), filestore, Solr, Zookeeper |
+| `default` | ✅ / ✅ | 14 d / 90 d | MariaDB, Metabase Postgres, Prefect Postgres (dump hooks) |
+| `openproject` | ✅ / ✅ | 14 d / 90 d | Postgres (`pg_dumpall`), app PVC |
+
+**Not backed up:** lakeFS object data (external infra), `kube-prometheus` PVCs
+(metrics history), etcd / control-plane state.
+
+Adding a stateful app means **adding a Velero `Schedule`** in
+[`apps/velero/values.yaml`](apps/velero/values.yaml). Full restore procedure:
+[`DISASTER-RECOVERY.md`](DISASTER-RECOVERY.md).

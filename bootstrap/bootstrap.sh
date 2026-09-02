@@ -40,3 +40,7 @@ echo "     kubectl patch configmap argocd-cm -n argocd --patch '{\"data\":{\"kus
 echo "     kubectl rollout restart deployment argocd-repo-server -n argocd"
 echo "  5. Apply ApplicationSet: kubectl apply -f applicationset.yaml -n argocd"
 echo "  6. Register Prefect workflow deployments: ./bootstrap/prefect/run-bootstrap.sh"
+echo ""
+echo "Restoring after data loss / total cluster loss (not a greenfield install)?"
+echo "  Follow DISASTER-RECOVERY.md instead — it covers Velero restore order"
+echo "  and loading the database dumps."
