@@ -67,6 +67,7 @@ Key secrets:
 - `lakefs-credentials` (in `default` namespace) — used by Prefect flows and the API server
 - `ckan-credentials` (in `default` namespace) — CKAN API token for the API server and sync flows
 - `apps/prefect-secrets/` — lakeFS and CKAN credentials injected into Prefect flow runs
+- `apify-credentials` (`apify-api-token`), `typesafe-credentials` (`typesafe-api-key`), `author-hash-credentials` (`author-hash-salt`) — used by the `scrape-x` flow (`workflow-prefect__scrape-x`). **Never rotate `author-hash-salt`**: it would change every `author_hash` and break author continuity across days.
 
 The Sealed Secrets controller's master key is **not** in this repo or any backup — it
 is held in Bitwarden (`sealed-secrets-master-key.yaml`) and is required before any

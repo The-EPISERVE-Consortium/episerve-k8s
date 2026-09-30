@@ -6,4 +6,6 @@ resources:
   - pi-agent-task-sealed-secret.yaml
   - blackboard-sealed-secret.yaml
   - github-sealed-secret.yaml
-
+  - apify-sealed-secret.yaml
+  - typesafe-sealed-secret.yaml
+  - author-hash-sealed-secret.yaml
