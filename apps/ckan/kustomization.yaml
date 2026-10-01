@@ -4,6 +4,7 @@ namespace: ckan
 resources:
   - namespace.yaml
   - sealed-secret.yaml
+  - doip-link-sealed-secret.yaml
 helmCharts:
   - name: ckan
     repo: https://keitaro-charts.storage.googleapis.com

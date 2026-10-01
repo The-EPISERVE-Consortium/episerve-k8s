@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - service-lb.yaml
+  - doip-link-sealed-secret.yaml
 
 patches:
   - path: deployment-tls-patch.yaml
