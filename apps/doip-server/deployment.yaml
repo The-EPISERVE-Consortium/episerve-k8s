@@ -36,3 +36,11 @@ spec:
                   key: lakefs-secret-key
             - name: CORS_ALLOWED_ORIGINS
               value: "https://data.episerve.zib.de"
+            # Verifies expiring links to restricted files (created by the CKAN theme).
+            # Must equal DOIP_LINK_SECRET on CKAN. Optional: unset = signed links are refused.
+            - name: DOIP_LINK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: doip-link-secret
+                  key: doip-link-secret
+                  optional: true

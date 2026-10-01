@@ -28,6 +28,14 @@ spec:
               value: "envvars episerve_theme activity image_view text_view datatables_view datastore xloader parquet_view"
             - name: CKAN___CKAN__PLUGINS
               value: "envvars episerve_theme activity image_view text_view datatables_view datastore xloader parquet_view"
+            # Signing key for expiring links to restricted DOIP files (episerve_theme helper).
+            # Must equal DOIP_LINK_SECRET on the doip-server. Optional: unset = links are not signed.
+            - name: DOIP_LINK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: doip-link-secret
+                  key: doip-link-secret
+                  optional: true
           volumeMounts:
             - name: ckan-user-local
               mountPath: /app/.local
