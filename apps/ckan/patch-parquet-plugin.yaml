@@ -13,7 +13,7 @@ spec:
             - install
             - --user
             - --quiet
-            - git+https://github.com/DataShades/ckanext-parquet.git
+            - git+https://github.com/DataShades/ckanext-parquet.git@49002f5f6d782243920dd9d8d1ef82eeb771abcb
             - git+https://github.com/The-EPISERVE-Consortium/ckanext-episerve-theme.git
           env:
             - name: HOME
