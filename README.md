@@ -49,10 +49,14 @@ bootstrap/
 | EPISERVE API | `api.episerve.zib.de` | FastAPI + NiceGUI |
 | CKAN | `data.episerve.zib.de` | Open data catalog |
 | DOIP server | `doip.episerve.zib.de` | DOIP 2.0 TCP + HTTP gateway |
-| Prefect | `prefect.episerve.zib.de` | Workflow server UI + API |
-| Metabase | `metabase.episerve.zib.de` | Dashboards |
+| Prefect | `prefect.episerve.zib.de` | Workflow server UI + API; ZIB network only (`base/gateway-zib-only`) |
+| Metabase | `metabase.episerve.zib.de` | Dashboards; ZIB network only (`base/gateway-zib-only`) |
 | OpenProject | `project.episerve.zib.de` | Project management |
-| ArgoCD | `argocd.episerve.zib.de` | GitOps controller; **ZIB network only** (`130.73.0.0/16`, via `base/gateway-zib-only`) |
+| ArgoCD | `argocd.episerve.zib.de` | GitOps controller; ZIB network only (`base/gateway-zib-only`) |
+
+`ZIB network only` means a `TrafficPolicy` allowing just `130.73.0.0/16`, which covers ZIB-internal and VPN
+traffic; off-site users need the ZIB VPN. CKAN, the API server, the DOIP server and OpenProject omit the
+`base/gateway-zib-only` component and are publicly reachable.
 
 ## Making changes
 
