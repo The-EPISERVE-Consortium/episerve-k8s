@@ -63,6 +63,8 @@ For CKAN changes: the ApplicationSet excludes `apps/ckan/` — sync it manually 
 
 Secrets are managed with [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets). The sealed secret files (`.yaml`) in each `apps/*/` directory are safe to commit. To rotate a secret, re-encrypt with `kubeseal` and commit the updated file.
 
+Always pass `--controller-name sealed-secrets --controller-namespace kube-system` to `kubeseal`. The cluster's controller is the Helm/Argo-managed release named `sealed-secrets`; `kubeseal`'s default (`sealed-secrets-controller`) refers to a since-removed duplicate whose keys were incompatible, and sealing with the wrong controller produces ciphertext the live controller cannot decrypt.
+
 Key secrets:
 - `lakefs-credentials` (in `default` namespace) — used by Prefect flows and the API server
 - `ckan-credentials` (in `default` namespace) — CKAN API token for the API server and sync flows

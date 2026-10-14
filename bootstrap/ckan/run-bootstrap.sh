@@ -27,7 +27,8 @@ seal() {
   local name="$1"
   kubectl create secret generic "$name" --namespace "$NAMESPACE" --dry-run=client -o yaml \
     "${@:2}" \
-    | kubeseal --namespace "$NAMESPACE" --format yaml
+    | kubeseal --controller-name sealed-secrets --controller-namespace kube-system \
+        --namespace "$NAMESPACE" --format yaml
 }
 
 echo "==> Generating passwords..."
