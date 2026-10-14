@@ -64,19 +64,3 @@ patches:
     target:
       kind: Deployment
       name: ckan
-  # Route internal calls to ckan/doip hostnames to the Gateway ClusterIP (hairpin NAT workaround).
-  - patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: not-used
-      spec:
-        template:
-          spec:
-            hostAliases:
-              - ip: "10.98.23.135"
-                hostnames:
-                  - "ckan.episerve.zib.de"
-                  - "doip.episerve.zib.de"
-    target:
-      kind: Deployment
