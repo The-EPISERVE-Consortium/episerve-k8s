@@ -117,10 +117,14 @@ lives only in the Prefect Postgres DB and is recovered via the `prefect` dump. I
    If the Prefect DB was lost beyond backup, recreate it by hand:
    `prefect work-pool update kubernetes-pool --base-job-template <file.json>`.
 
-8. **Sync CKAN** (excluded from the ApplicationSet):
+8. **Confirm CKAN synced.** It is excluded from the ApplicationSet, but the
+   `infrastructure` Application creates its own `ckan` Application
+   (`infrastructure/argocd-apps/ckan-application.yaml`), which auto-syncs. Wait
+   for it to be `Synced` / `Healthy`, and force it only if it stalls:
 
    ```bash
-   argocd app sync ckan
+   argocd app wait ckan --sync --health
+   argocd app sync ckan   # only if needed
    ```
 
    Rebuild the Solr index from Postgres if search is empty:

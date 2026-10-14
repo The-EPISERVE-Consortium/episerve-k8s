@@ -64,7 +64,7 @@ traffic; off-site users need the ZIB VPN. CKAN, the API server, the DOIP server 
 2. Commit and push to `main`.
 3. ArgoCD detects the change and syncs the affected Application automatically (within ~3 minutes, or force-sync via the ArgoCD UI).
 
-For CKAN changes: the ApplicationSet excludes `apps/ckan/` — sync it manually via the ArgoCD UI or `argocd app sync ckan`.
+CKAN changes deploy the same way. The ApplicationSet excludes `apps/ckan/`, but its own Application (`infrastructure/argocd-apps/ckan-application.yaml`) also has `automated` sync with prune and self-heal. `argocd app sync ckan` only forces an immediate sync.
 
 ## Secrets
 
