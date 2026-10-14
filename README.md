@@ -49,17 +49,10 @@ bootstrap/
 | EPISERVE API | `api.episerve.zib.de` | FastAPI + NiceGUI |
 | CKAN | `data.episerve.zib.de` | Open data catalog |
 | DOIP server | `doip.episerve.zib.de` | DOIP 2.0 TCP + HTTP gateway |
-| Prefect | `prefect.episerve.zib.de` | Workflow server UI + API; intended ZIB-only — see note below |
-| Metabase | `metabase.episerve.zib.de` | Dashboards; intended ZIB-only — see note below |
+| Prefect | `prefect.episerve.zib.de` | Workflow server UI + API |
+| Metabase | `metabase.episerve.zib.de` | Dashboards |
 | OpenProject | `project.episerve.zib.de` | Project management |
-| ArgoCD | `argocd.episerve.zib.de` | GitOps controller; intended ZIB-only — see note below |
-
-**ZIB-only is currently NOT enforced.** `argocd`, `metabase` and `prefect` set `base/gateway-zib-only`
-(`TrafficPolicy.spec.acl`, allow `130.73.0.0/16`), but kgateway implements that ACL with an Envoy dynamic
-Rust module which is not loaded on this cluster, so the filter is emitted disabled and the policy **fails
-open**. Verified 2026-10-14 from a non-ZIB IP: `https://argocd.episerve.zib.de/api/version` returned
-`{"Version":"v3.4.2"}`. Treat these three as publicly reachable until fixed; see
-[`infrastructure/base/gateway-zib-only/`](infrastructure/base/gateway-zib-only/).
+| ArgoCD | `argocd.episerve.zib.de` | GitOps controller; **ZIB network only** (`130.73.0.0/16`, via `base/gateway-zib-only`) |
 
 ## Making changes
 
