@@ -7,3 +7,7 @@ helmCharts:
     releaseName: sealed-secrets
     namespace: kube-system
     valuesFile: values.yaml
+    # Renders the chart's crds/ directory. Without this the SealedSecret CRD is
+    # never applied, so a rebuilt cluster has the controller but no SealedSecret
+    # kind and every apps/*/sealed-secret.yaml fails to apply.
+    includeCRDs: true

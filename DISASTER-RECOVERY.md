@@ -75,6 +75,14 @@ lives only in the Prefect Postgres DB and is recovered via the `prefect` dump. I
    kubectl -n velero get secret velero-s3-credentials    # must exist
    ```
 
+   The `SealedSecret` CRD is part of this sync — `infrastructure/sealed-secrets/`
+   renders it via the chart's `includeCRDs: true`, so no manual CRD step is needed.
+   If `SealedSecret`s fail with `no matches for kind "SealedSecret"`, the CRD has not
+   been applied yet; wait for the `infrastructure` Application to finish and re-sync
+   the app Applications. Do **not** work around it by applying the upstream
+   `controller.yaml` — that also installs a second controller whose keys are
+   incompatible (see the setup runbook).
+
 4. **Verify Velero sees the backups:**
 
    ```bash
