@@ -31,7 +31,10 @@ infrastructure/
     argocd/, ckan/, doip-server/, episerve-api-server/
     metabase/, openproject/, prefect/
   sealed-secrets/          # Sealed Secrets controller
-  gateway-websocket-policy.yaml  # HTTPListenerPolicy enabling WebSocket for NiceGUI
+  # NOTE: gateway-websocket-policy.yaml was removed 2026-08-25. The
+  # HTTPListenerPolicy made kgateway emit a duplicate 'websocket' upgrade_configs
+  # entry that Envoy rejects, which broke every listener on the shared gateway.
+  # Do not re-add without testing against a throwaway pod restart first.
 
 bootstrap/
   bootstrap.sh             # Cluster bootstrap script
@@ -49,7 +52,7 @@ bootstrap/
 | Prefect | `prefect.episerve.zib.de` | Workflow server UI + API |
 | Metabase | `metabase.episerve.zib.de` | Dashboards |
 | OpenProject | `project.episerve.zib.de` | Project management |
-| ArgoCD | cluster-internal | GitOps controller |
+| ArgoCD | `argocd.episerve.zib.de` | GitOps controller |
 
 ## Making changes
 
