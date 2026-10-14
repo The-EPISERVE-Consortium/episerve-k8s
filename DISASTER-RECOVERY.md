@@ -43,7 +43,7 @@ lives only in the Prefect Postgres DB and is recovered via the `prefect` dump. I
 
 | Item | Why it matters | Mitigation |
 |---|---|---|
-| **Sealed Secrets master key** | Without it, every `*/sealed-secret.yaml` in this repo is undecryptable — including `velero-s3-credentials`, so you cannot even read the backups. | Stored in Bitwarden as `sealed-secrets-master-key.yaml`. Keep it current; verify access quarterly. |
+| **Sealed Secrets keys** | Without them, every `*/sealed-secret.yaml` in this repo is undecryptable — including `velero-s3-credentials`, so you cannot even read the backups. | Stored in Bitwarden as `sealed-secrets-master-keys.yaml`. It must contain **every** key the controller has ever generated — currently 8 and growing by one roughly every 30 days. Each `SealedSecret` is decryptable only by the key that was current when it was sealed, and keys cannot be derived from one another, so a partial set is unrecoverable. Verify access quarterly and re-export after each rotation; see the setup runbook for the export command. |
 | **lakeFS object data** (`data-raw`, `data-processed`, `model-runs`) | The actual datasets and model outputs. lakeFS runs on external infra (`lake-episerve.zib.de`), not this cluster. | Backed up by whoever operates lakeFS — confirm separately. Out of scope here. |
 | `kube-prometheus` PVCs | Prometheus TSDB + Alertmanager state — metrics/alert history is lost on restore. | Accepted. History is not business-critical and re-accumulates. |
 | etcd / control-plane state | Node and control-plane rebuild is not Velero's job. | Handled by cluster provisioning tooling. |
@@ -54,14 +54,16 @@ lives only in the Prefect Postgres DB and is recovered via the `prefect` dump. I
 1. **Rebuild the cluster** — nodes, control plane, CNI, and the Ceph CSI storage
    classes (`csi-rbd-sc`, CephFS). Not covered here.
 
-2. **Restore the Sealed Secrets master key** (from Bitwarden), then bootstrap ArgoCD:
+2. **Restore the Sealed Secrets keys** (from Bitwarden), then bootstrap ArgoCD:
 
    ```bash
    ./bootstrap/bootstrap.sh
    # When prompted:
-   kubectl apply -f sealed-secrets-master-key.yaml
+   kubectl apply -f sealed-secrets-master-keys.yaml
    kubectl rollout restart deployment sealed-secrets -n kube-system
    ```
+
+   The file is a Kubernetes `List` containing all key secrets, so the single `apply` restores the whole set. Before relying on it, confirm the file holds every key the cluster used — a set missing any key silently fails later, when that key's `SealedSecret` is unsealed.
 
 3. **Sync infrastructure and apps** via ArgoCD (see `bootstrap.sh` "Next steps"):
    connect the repo, create the `infrastructure` Application, apply
@@ -166,7 +168,17 @@ Do this at least once per quarter, and after any change to `apps/velero/`:
 1. `velero backup get` — confirm daily + weekly backups are recent and `Completed`.
 2. Restore one namespace into a scratch namespace or a throwaway cluster and reload
    a DB from its dump.
-3. Confirm the Bitwarden `sealed-secrets-master-key.yaml` entry is present and that
-   at least one person on the team can retrieve it.
+3. Confirm the Bitwarden `sealed-secrets-master-keys.yaml` entry is present, that at
+   least one person on the team can retrieve it, and that it contains the same number
+   of keys the cluster reports:
+
+   ```bash
+   # items in the backup file must equal this count
+   kubectl get secret -n kube-system \
+     -l sealedsecrets.bitnami.com/sealed-secrets-key --no-headers | wc -l
+   ```
+
+   A backup holding fewer keys than the cluster looks fine until a restore is attempted,
+   at which point the affected `SealedSecret`s cannot be decrypted.
 4. Check that every stateful namespace (`kubectl get pvc -A`) is covered by a
    `Schedule` in `apps/velero/values.yaml`.

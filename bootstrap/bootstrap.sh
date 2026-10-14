@@ -24,8 +24,8 @@ kubectl rollout restart deployment argocd-server -n argocd
 kubectl rollout status deployment argocd-server -n argocd
 
 echo "==> Restoring Sealed Secrets master key"
-echo "    Copy sealed-secrets-master-key.yaml from Bitwarden and run:"
-echo "    kubectl apply -f sealed-secrets-master-key.yaml"
+echo "    Copy sealed-secrets-master-keys.yaml from Bitwarden and run:"
+echo "    kubectl apply -f sealed-secrets-master-keys.yaml"
 echo "    kubectl rollout restart deployment sealed-secrets -n kube-system"
 echo ""
 echo "==> ArgoCD is ready"

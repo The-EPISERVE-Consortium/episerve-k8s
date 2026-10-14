@@ -79,7 +79,7 @@ Key secrets:
 - `apify-credentials` (`apify-api-token`), `typesafe-credentials` (`typesafe-api-key`), `author-hash-credentials` (`author-hash-salt`) — used by the `scrape-x` flow (`workflow-prefect__scrape-x`). **Never rotate `author-hash-salt`**: it would change every `author_hash` and break author continuity across days.
 
 The Sealed Secrets controller's master key is **not** in this repo or any backup — it
-is held in Bitwarden (`sealed-secrets-master-key.yaml`) and is required before any
+is held in Bitwarden (`sealed-secrets-master-keys.yaml`) and is required before any
 secret (including Velero's S3 credentials) can be decrypted on a rebuilt cluster.
 
 ## Backups
