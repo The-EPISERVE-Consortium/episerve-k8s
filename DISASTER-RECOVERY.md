@@ -45,93 +45,147 @@ lives only in the Prefect Postgres DB and is recovered via the `prefect` dump. I
 |---|---|---|
 | **Sealed Secrets keys** | Without them, every `*/sealed-secret.yaml` in this repo is undecryptable — including `velero-s3-credentials`, so you cannot even read the backups. | Stored in Bitwarden as `sealed-secrets-master-keys.yaml`. It must contain **every** key the controller has ever generated — currently 8 and growing by one roughly every 30 days. Each `SealedSecret` is decryptable only by the key that was current when it was sealed, and keys cannot be derived from one another, so a partial set is unrecoverable. Verify access quarterly and re-export after each rotation; see the setup runbook for the export command. |
 | **lakeFS object data** (`data-raw`, `data-processed`, `model-runs`) | The actual datasets and model outputs. lakeFS runs on external infra (`lake-episerve.zib.de`), not this cluster. | Backed up by whoever operates lakeFS — confirm separately. Out of scope here. |
+| **Velero Kopia repository password** (`velero-repo-credentials`) | Encrypts all backup data; without it the backups in S3 cannot be read. | Not stored anywhere because it is Velero's built-in default (`static-passw0rd`), which a fresh Velero recreates automatically. If it is ever changed, store the new value in Bitwarden. See [step 3](#full-cluster-restore-total-loss). |
 | `kube-prometheus` PVCs | Prometheus TSDB + Alertmanager state — metrics/alert history is lost on restore. | Accepted. History is not business-critical and re-accumulates. |
 | etcd / control-plane state | Node and control-plane rebuild is not Velero's job. | Handled by cluster provisioning tooling. |
 | Any **new stateful namespace** added later | Not backed up unless a `Schedule` is added for it. | See the backup-coverage note in [`README.md`](README.md#backups). Adding a stateful app = add a Velero schedule. |
 
 ## Full cluster restore (total loss)
 
-1. **Rebuild the cluster** — nodes, control plane, CNI, and the Ceph CSI storage
-   classes (`csi-rbd-sc`, CephFS). Not covered here.
+> **Order matters.** Restore the data with Velero *before* ArgoCD creates any
+> application. If ArgoCD runs first, CKAN, `default` and OpenProject start on new,
+> empty PVCs. Velero skips PVCs that already exist and only copies backed-up files
+> into pods it creates itself, so the data would silently not be restored. Scaling
+> the workloads down does not help, because the empty PVCs remain.
+>
+> That is why steps 2–3 install the sealed-secrets controller and Velero **by hand**
+> from this repo (normally ArgoCD installs both), and ArgoCD only arrives in step 6,
+> where it adopts what is already running.
 
-2. **Restore the Sealed Secrets keys** (from Bitwarden), then bootstrap ArgoCD:
+> **Do not run `bootstrap/ckan/run-bootstrap.sh` during a restore.** It is for a
+> fresh install only: it generates *new* passwords and secrets, overwrites
+> `apps/ckan/values.yaml` and `apps/ckan/sealed-secret.yaml`, and re-initialises the
+> databases. Run during a restore, it would leave the restored data unusable.
+
+Tools needed on the operator machine: `kubectl` (episerve01 context, OIDC login,
+LDAP group `login_k8s_episerve`), `kubeseal`, the `velero` CLI (v1.18.x), and a
+clone of this repo.
+
+1. **Rebuild the cluster and confirm ZIB's platform layer is back.** The control
+   plane, nodes and the cluster-wide platform are operated by ZIB (Flux repo
+   `rise-flux`), not by this repo. Before continuing, confirm with ZIB, or check
+   directly, that these exist:
+
+   | Prerequisite | Needed for | Check |
+   |---|---|---|
+   | Ceph CSI storage classes `csi-rbd-sc`, `csi-cephfs-sc-hdd` | every PVC | `kubectl get storageclass` |
+   | kgateway + `shared-public-gateway` on IP **130.73.131.120** | all service URLs | `kubectl get svc -n kgateway-system shared-public-gateway` |
+   | WebSocket `ListenerPolicy` on that gateway | API server UI (NiceGUI) | `kubectl get listenerpolicy -n kgateway-system` |
+   | DNS CNAMEs `*.episerve.zib.de` → `lb223.zib.de` | all service URLs | `getent hosts data.episerve.zib.de` |
+   | cert-manager (CRDs + controller) | TLS certificates, `ClusterIssuer` | `kubectl get crd certificates.cert-manager.io` |
+   | kube-prometheus-stack (CRDs `PrometheusRule`, `ServiceMonitor`, `AlertmanagerConfig`) | `monitoring-alerts` app, Velero `ServiceMonitor` | `kubectl get crd servicemonitors.monitoring.coreos.com` |
+
+   The gateway IP is pinned by ZIB (`lbipam.cilium.io/ips`), so DNS stays valid. The
+   other LoadBalancer IPs are **not** pinned: MariaDB (`130.73.130.213`) and
+   `doip-server-lb` will most likely get new IPs. Tell external MariaDB users.
+
+2. **Restore the Sealed Secrets keys, then install the controller by hand.**
 
    ```bash
-   ./bootstrap/bootstrap.sh
-   # When prompted:
-   kubectl apply -f sealed-secrets-master-keys.yaml
-   kubectl rollout restart deployment sealed-secrets -n kube-system
+   kubectl apply -f sealed-secrets-master-keys.yaml          # from Bitwarden
+   kubectl kustomize --enable-helm infrastructure/sealed-secrets \
+     | kubectl apply --server-side -f -
+   kubectl -n kube-system rollout status deploy/sealed-secrets
    ```
 
-   The file is a Kubernetes `List` containing all key secrets, so the single `apply` restores the whole set. Before relying on it, confirm the file holds every key the cluster used — a set missing any key silently fails later, when that key's `SealedSecret` is unsealed.
+   Applying the keys *before* the controller starts means it loads them at startup,
+   so no restart is needed. The file is a Kubernetes `List` holding all key secrets;
+   confirm it holds every key the cluster used (8 as of 2026-10). A set that is
+   missing a key fails silently later, when that key's `SealedSecret` is unsealed.
+   Do **not** apply the upstream `controller.yaml`: it installs a second controller
+   whose keys are incompatible (see the setup runbook).
 
-3. **Sync infrastructure and apps** via ArgoCD (see `bootstrap.sh` "Next steps"):
-   connect the repo, create the `infrastructure` Application, apply
-   `applicationset.yaml`. Wait for `sealed-secrets`, `cert-manager`, gateways, and
-   **`velero`** to become healthy. Confirm secrets decrypt:
+3. **Install Velero by hand and check that it sees the old backups.**
 
    ```bash
-   kubectl get sealedsecret -A
-   kubectl -n velero get secret velero-s3-credentials    # must exist
+   kubectl kustomize --enable-helm apps/velero | kubectl apply --server-side -f -
+   kubectl -n velero rollout status deploy/velero
+   kubectl -n velero get secret velero-s3-credentials   # must exist = decryption works
+   velero backup-location get                          # PHASE: Available
+   velero backup get                                   # daily-*/weekly-* synced from S3
    ```
 
-   The `SealedSecret` CRD is part of this sync — `infrastructure/sealed-secrets/`
-   renders it via the chart's `includeCRDs: true`, so no manual CRD step is needed.
-   If `SealedSecret`s fail with `no matches for kind "SealedSecret"`, the CRD has not
-   been applied yet; wait for the `infrastructure` Application to finish and re-sync
-   the app Applications. Do **not** work around it by applying the upstream
-   `controller.yaml` — that also installs a second controller whose keys are
-   incompatible (see the setup runbook).
+   The Schedules have `skipImmediately: true`, so creating them does not back up
+   the still-empty namespaces. The `velero-upgrade-crds` Job (a Helm hook) runs once;
+   that is harmless.
 
-4. **Verify Velero sees the backups:**
+   **Kopia repository password:** Velero encrypts the backup data with the password
+   in the Secret `velero-repo-credentials`. Velero creates that Secret automatically
+   with its built-in default (`static-passw0rd`), which is what the existing backups
+   use (checked 2026-10-14). A fresh Velero therefore reads them without any input.
+   If this password is ever changed, the new value **must** be stored in Bitwarden,
+   or every backup made after the change becomes unreadable after a total loss.
 
-   ```bash
-   velero backup get                 # lists daily-*/weekly-* from S3
-   velero backup-location get        # PHASE should be Available
-   ```
-
-5. **Restore data namespaces** from the most recent good backup of each. Restore
-   into the empty namespaces *before* their ArgoCD Application recreates the
-   workloads, or scale the workloads down first so the DB starts on restored data:
+4. **Restore the data namespaces into the empty cluster.** Pick the most recent
+   good backup of each (`velero backup describe <name>`: phase `Completed`, no hook
+   errors):
 
    ```bash
    velero restore create --from-backup daily-ckan-<timestamp>
    velero restore create --from-backup daily-default-<timestamp>
    velero restore create --from-backup daily-openproject-<timestamp>
-   velero restore describe <restore-name>   # watch to completion
+   velero restore describe <restore-name> --details   # wait for Completed; read warnings
    ```
 
-6. **Verify / repair each database.** The restored PVC contains both the live
+   Velero recreates the PVCs, StatefulSets, Deployments, Services and Secrets and
+   copies the file-system backups into the new volumes before the pods start. The
+   `default` restore also brings back `doip-server`, `episerve-api-server` and
+   Prefect. That is fine: they match git, and ArgoCD adopts them in step 6.
+
+5. **Verify / repair each database.** The restored PVC contains both the live
    `PGDATA`/datadir (crash-consistent, possibly torn) *and* the logical dump.
-   Start the DB pod; if it comes up clean and data looks right, you are done.
-   If it will not start or the data is inconsistent, reload from the dump — see
+   If the DB pod comes up clean and the data looks right, you are done. If it will
+   not start or the data is inconsistent, reload from the dump. See
    [Reload a database from its dump](#reload-a-database-from-its-dump).
 
-7. **Re-register Prefect deployments:**
+6. **Only now install ArgoCD and hand everything over to it.**
+
+   ```bash
+   ./bootstrap/bootstrap.sh     # ArgoCD (pinned version), --enable-helm, server.insecure
+   ```
+
+   Then follow its "Next steps": connect the repo, create the `infrastructure`
+   Application, and apply `applicationset.yaml`. Skip the key-restore step there;
+   it was done in step 2. ArgoCD finds the hand-installed sealed-secrets and Velero
+   and the restored workloads already matching git, and adopts them. The
+   `infrastructure` app also creates the auto-syncing `ckan` Application
+   (`infrastructure/argocd-apps/ckan-application.yaml`). Wait until everything is
+   `Synced` / `Healthy`:
+
+   ```bash
+   kubectl get applications -n argocd
+   argocd app wait ckan --sync --health   # force with `argocd app sync ckan` only if it stalls
+   ```
+
+7. **Prefect deployments.** The deployments, the automation and the work-pool
+   base job template live in the Prefect DB and come back with the `default`
+   restore. Re-registering them from the flow repos is optional and refreshes them
+   to the repos' current state:
 
    ```bash
    ./bootstrap/prefect/run-bootstrap.sh
    ```
 
-   The work-pool base job template is restored with the `prefect` DB (step 5–6).
-   If the Prefect DB was lost beyond backup, recreate it by hand:
-   `prefect work-pool update kubernetes-pool --base-job-template <file.json>`.
+   If the Prefect DB was lost beyond backup, also recreate the work-pool template
+   by hand: `prefect work-pool update kubernetes-pool --base-job-template <file.json>`.
 
-8. **Confirm CKAN synced.** It is excluded from the ApplicationSet, but the
-   `infrastructure` Application creates its own `ckan` Application
-   (`infrastructure/argocd-apps/ckan-application.yaml`), which auto-syncs. Wait
-   for it to be `Synced` / `Healthy`, and force it only if it stalls:
-
-   ```bash
-   argocd app wait ckan --sync --health
-   argocd app sync ckan   # only if needed
-   ```
-
-   Rebuild the Solr index from Postgres if search is empty:
+8. **CKAN search index.** If search is empty, rebuild it from Postgres:
    `ckan search-index rebuild`.
 
 9. **Smoke test** every service URL in [`README.md`](README.md), trigger one
-   Prefect flow run, and confirm it can reach lakeFS / CKAN / MariaDB.
+   Prefect flow run, and confirm it can reach lakeFS / CKAN / MariaDB. OpenProject
+   users have to log in again: its chart regenerates `secret_key_base`. Passwords
+   and API keys are unaffected.
 
 ## Single namespace / single DB restore
 
