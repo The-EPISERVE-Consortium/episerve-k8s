@@ -1,5 +1,11 @@
 configuration:
   features: EnableCSI
+  # New Schedules wait for their next cron time instead of backing up immediately. On a rebuilt
+  # cluster an immediate backup would capture still-empty namespaces before the Velero restore
+  # (see DISASTER-RECOVERY.md). Server-level on purpose: the per-Schedule skipImmediately field
+  # is one-shot (Velero resets it to false), which leaves ArgoCD permanently OutOfSync.
+  extraArgs:
+    - --schedule-skip-immediately
   backupStorageLocation:
     - name: default
       provider: aws
@@ -35,9 +41,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "0 2 * * *"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["ckan"]
         ttl: 336h      # 14 days
@@ -76,9 +79,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "0 4 * * 0"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["ckan"]
         ttl: 2160h     # 90 days
@@ -118,9 +118,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "30 2 * * *"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["openproject"]
         ttl: 336h
@@ -159,9 +156,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "30 4 * * 0"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["openproject"]
         ttl: 2160h
@@ -201,9 +195,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "0 3 * * *"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["default"]
         ttl: 336h
@@ -289,9 +280,6 @@ extraObjects:
       namespace: velero
     spec:
       schedule: "0 5 * * 0"
-      # Don\'t back up immediately on creation: on a rebuilt cluster that would capture
-      # still-empty namespaces before the Velero restore (see DISASTER-RECOVERY.md).
-      skipImmediately: true
       template:
         includedNamespaces: ["default"]
         ttl: 2160h

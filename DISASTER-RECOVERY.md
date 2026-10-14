@@ -115,9 +115,11 @@ clone of this repo.
    velero backup get                                   # daily-*/weekly-* synced from S3
    ```
 
-   The Schedules have `skipImmediately: true`, so creating them does not back up
-   the still-empty namespaces. The `velero-upgrade-crds` Job (a Helm hook) runs once;
-   that is harmless.
+   The Velero server runs with `--schedule-skip-immediately`
+   (`configuration.extraArgs` in `apps/velero/values.yaml`), so creating the
+   Schedules does not back up the still-empty namespaces; each one waits for its
+   next cron time. The `velero-upgrade-crds` Job (a Helm hook) runs once; that is
+   harmless.
 
    **Kopia repository password:** Velero encrypts the backup data with the password
    in the Secret `velero-repo-credentials`. Velero creates that Secret automatically
