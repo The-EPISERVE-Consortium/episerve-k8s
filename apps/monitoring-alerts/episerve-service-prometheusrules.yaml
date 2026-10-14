@@ -65,7 +65,9 @@ spec:
 
         - alert: VeleroJobFailed
           expr: |
-            kube_job_failed{namespace="velero"} > 0
+            (kube_job_failed{namespace="velero"} > 0)
+            and on (namespace, job_name)
+            (time() - kube_job_status_start_time{namespace="velero"} < 21600)
           for: 5m
           labels:
             severity: warning
@@ -74,7 +76,7 @@ spec:
             service: velero
           annotations:
             summary: Velero job failed
-            description: Job {{ $labels.job_name }} in namespace velero has failed.
+            description: Job {{ $labels.job_name }} in namespace velero failed within the last 6 hours.
 
     - name: episerve-argocd
       rules:
@@ -194,7 +196,9 @@ spec:
 
         - alert: OpenProjectJobFailed
           expr: |
-            kube_job_failed{namespace="openproject"} > 0
+            (kube_job_failed{namespace="openproject"} > 0)
+            and on (namespace, job_name)
+            (time() - kube_job_status_start_time{namespace="openproject"} < 21600)
           for: 5m
           labels:
             severity: warning
@@ -203,7 +207,7 @@ spec:
             service: openproject
           annotations:
             summary: OpenProject job failed
-            description: Job {{ $labels.job_name }} in namespace openproject has failed.
+            description: Job {{ $labels.job_name }} in namespace openproject failed within the last 6 hours.
 
     - name: episerve-default-data
       rules:

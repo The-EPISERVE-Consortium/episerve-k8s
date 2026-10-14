@@ -55,13 +55,30 @@ spec:
             summary: CKAN StatefulSet has unavailable replicas
             description: StatefulSet {{ $labels.statefulset }} in namespace ckan has fewer ready replicas than desired for 10 minutes.
 
+        # Only Jobs started in the last 6h: a failed Job object can outlive the problem (CronJob
+        # failedJobsHistoryLimit keeps it until the next failure), which would otherwise fire forever.
         - alert: CkanJobFailed
           expr: |
-            kube_job_failed{namespace="ckan"} > 0
+            (kube_job_failed{namespace="ckan"} > 0)
+            and on (namespace, job_name)
+            (time() - kube_job_status_start_time{namespace="ckan"} < 21600)
           for: 5m
           labels:
             severity: warning
             namespace: ckan
           annotations:
             summary: CKAN job failed
-            description: Job {{ $labels.job_name }} in namespace ckan has failed.
+            description: Job {{ $labels.job_name }} in namespace ckan failed within the last 6 hours.
+
+        # Persistent CronJob failure; resolves on the next successful run. 2h = ~8 missed runs of the
+        # 15-minute ckan-email-notifications schedule.
+        - alert: CkanCronJobNotSucceeding
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace="ckan"} > 7200
+          for: 5m
+          labels:
+            severity: warning
+            namespace: ckan
+          annotations:
+            summary: CKAN CronJob has not succeeded recently
+            description: CronJob {{ $labels.cronjob }} in namespace ckan has not completed successfully for over 2 hours.
