@@ -9,10 +9,6 @@ spec:
       kind: ListenerSet
       group: gateway.networking.k8s.io
       sectionName: doip
-    - name: doip-server-tcp-listeners
-      kind: ListenerSet
-      group: gateway.networking.k8s.io
-      sectionName: doip-compat
   hostnames:
     - doip.episerve.zib.de
   rules:

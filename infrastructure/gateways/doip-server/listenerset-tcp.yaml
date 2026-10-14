@@ -18,11 +18,5 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
-    - name: doip-compat
-      port: 3568
-      protocol: TLS
-      tls:
-        mode: Passthrough
-      allowedRoutes:
-        namespaces:
-          from: Same
+  # No listener for the compat port (3568): it speaks a custom length-prefixed
+  # JSON framing that no known client uses (not doipy/DOIP 2.0 text framing).

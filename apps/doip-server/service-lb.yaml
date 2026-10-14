@@ -12,7 +12,3 @@ spec:
       port: 3567
       targetPort: 3567
       protocol: TCP
-    - name: doip-compat
-      port: 3568
-      targetPort: 3568
-      protocol: TCP
