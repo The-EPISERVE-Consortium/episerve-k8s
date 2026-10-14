@@ -1,1 +1,6 @@
 fullnameOverride: sealed-secrets
+# No automatic key rotation (controller default: a new key every 30 days). Every new
+# key must be added to the Bitwarden export or the DR key set goes stale, and here
+# nothing is re-sealed on rotation anyway. Rotate deliberately instead; see
+# DISASTER-RECOVERY.md and the Obsidian restore note.
+keyrenewperiod: "0"
