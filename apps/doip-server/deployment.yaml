@@ -19,6 +19,29 @@ spec:
           ports:
             - containerPort: 80
             - containerPort: 3567
+          # Baseline 280-560 MiB, but storage_lakefs reads whole objects into memory: RSS peaked at
+          # 17.6 GiB (2026-10-11). The 20Gi limit only stops one download from starving the node; lower it
+          # (~2Gi) once objects are streamed. No CPU limit (peak ~325m), to avoid throttling.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              memory: 20Gi
+          # HTTP gateway (uvicorn, the container's main process) serves the landing page on /.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+          # The DOIP TCP server runs as a background process; if it dies, the container keeps
+          # running on uvicorn alone. This restarts it when port 3567 stops accepting connections.
+          livenessProbe:
+            tcpSocket:
+              port: 3567
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
           env:
             - name: LAKEFS_URL
               value: "https://lake-episerve.zib.de"
