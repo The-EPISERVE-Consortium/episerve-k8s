@@ -52,7 +52,7 @@ bootstrap/
 | Prefect | `prefect.episerve.zib.de` | Workflow server UI + API |
 | Metabase | `metabase.episerve.zib.de` | Dashboards |
 | OpenProject | `project.episerve.zib.de` | Project management |
-| ArgoCD | `argocd.episerve.zib.de` | GitOps controller |
+| ArgoCD | `argocd.episerve.zib.de` | GitOps controller; **ZIB network only** (`130.73.0.0/16`, via `base/gateway-zib-only`) |
 
 ## Making changes
 
