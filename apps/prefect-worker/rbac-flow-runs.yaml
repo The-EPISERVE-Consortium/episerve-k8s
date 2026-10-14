@@ -1,0 +1,29 @@
+# Flow-run pods (default SA) create model Jobs and read their pods and logs:
+# workflow-prefect__model-runner tasks/submit_and_wait.py, tools/k8_tools.py.
+# The worker itself uses the chart's own prefect-worker SA and Role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: prefect-job-runner
+  namespace: default
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prefect-job-runner
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prefect-job-runner
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
