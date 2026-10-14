@@ -70,3 +70,8 @@ spec:
                 secretKeyRef:
                   name: episerve-api-server-auth
                   key: auth-password
+            - name: STORAGE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: episerve-api-server-auth
+                  key: storage-secret
