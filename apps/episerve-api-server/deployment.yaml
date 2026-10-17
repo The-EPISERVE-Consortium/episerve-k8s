@@ -74,6 +74,18 @@ spec:
                 secretKeyRef:
                   name: ckan-credentials
                   key: ckan-api-token
+            - name: AGENTMAIL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agentmail-credentials
+                  key: api-key
+                  optional: true
+            - name: AGENTMAIL_INBOX
+              valueFrom:
+                secretKeyRef:
+                  name: agentmail-credentials
+                  key: inbox
+                  optional: true
             - name: AUTH_MASTER_SECRET
               valueFrom:
                 secretKeyRef:
