@@ -9,3 +9,4 @@ resources:
   - apify-sealed-secret.yaml
   - typesafe-sealed-secret.yaml
   - author-hash-sealed-secret.yaml
+  - episerve-agent-sealed-secret.yaml
