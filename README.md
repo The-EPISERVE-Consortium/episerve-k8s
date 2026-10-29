@@ -17,10 +17,12 @@ apps/
   episerve-api-server/     # FastAPI + NiceGUI platform API
   mariadb/                 # MariaDB (episerve-raw-data database)
   metabase/                # Metabase dashboards (reads MariaDB)
+  monitoring-alerts/       # Prometheus alert rules + Alertmanager mail config
   openproject/             # Project management (project.episerve.zib.de)
   prefect/                 # Prefect server
   prefect-worker/          # Prefect Kubernetes work pool worker
-  prefect-secrets/         # Sealed secrets for Prefect flows (lakeFS, CKAN)
+  prefect-secrets/         # Sealed secrets injected into Prefect flow runs
+  velero/                  # Backups to S3 (see Backups)
 
 infrastructure/
   argocd-apps/             # CKAN ArgoCD Application
@@ -30,7 +32,9 @@ infrastructure/
   gateways/                # Per-service HTTPRoute kustomizations
     argocd/, ckan/, doip-server/, episerve-api-server/
     metabase/, openproject/, prefect/
+  grafana-dashboards/      # Grafana dashboards (monitoring overview, Velero backups)
   sealed-secrets/          # Sealed Secrets controller
+  snapshot-controller/     # VolumeSnapshotClasses for CephFS and RBD
   # NOTE: gateway-websocket-policy.yaml was removed 2026-08-25. The
   # HTTPListenerPolicy made kgateway emit a duplicate 'websocket' upgrade_configs
   # entry that Envoy rejects, which broke every listener on the shared gateway.
@@ -82,7 +86,11 @@ Always pass `--controller-name sealed-secrets --controller-namespace kube-system
 Key secrets:
 - `lakefs-credentials` (in `default` namespace) — used by Prefect flows and the API server
 - `ckan-credentials` (in `default` namespace) — CKAN API token for the API server and sync flows
-- `apps/prefect-secrets/` — lakeFS and CKAN credentials injected into Prefect flow runs
+- `apps/prefect-secrets/` — secrets injected into Prefect flow runs (through the `kubernetes-pool` base job template on the Prefect server): `lakefs-credentials`, `ckan-credentials`, and the ones below
+- `blackboard-credentials` (`blackboard-password`) — MariaDB user `blackboard` for the AI task pipeline
+- `pi-agent-task-credentials` (`zib-api-key`, `discord-webhook-url`), `github-credentials` (`github-token`), `episerve-agent-credentials` (`username`, `password`) — the AI task agent: LLM key, Discord delivery, GitHub PRs, and its platform service user
+- `agentmail-credentials` (`api-key`, `inbox`, in `apps/episerve-api-server/`) — outgoing mail of the API server
+- `doip-link-secret` (in `apps/ckan/` and `apps/doip-server/`, same value) — signs and checks the expiring links to restricted files
 - `apify-credentials` (`apify-api-token`), `typesafe-credentials` (`typesafe-api-key`), `author-hash-credentials` (`author-hash-salt`) — used by the `scrape-x` flow (`workflow-prefect__scrape-x`). **Never rotate `author-hash-salt`**: it would change every `author_hash` and break author continuity across days.
 
 The Sealed Secrets controller's master key is **not** in this repo or any backup — it
