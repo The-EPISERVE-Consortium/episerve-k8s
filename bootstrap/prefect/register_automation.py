@@ -5,7 +5,9 @@ deployment whenever a model-runner deployment run completes successfully.
 Run from the repo root after setting PREFECT_API_URL (and optionally
 PREFECT_API_KEY and the SOURCE_DEPLOYMENT_NAME / TARGET_DEPLOYMENT_NAME env vars):
 
-    python maintenance/register_automation.py
+    python bootstrap/prefect/register_automation.py
+
+bootstrap_prefect-workflows.sh runs it after registering the deployments.
 
 PREFECT_API_URL defaults to https://prefect.episerve.zib.de/api (the cluster
 gateway). Override via env var if needed. No API key is required (Prefect OSS).

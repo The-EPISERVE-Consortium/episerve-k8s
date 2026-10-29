@@ -14,6 +14,7 @@ echo "==> Creating ConfigMap..."
 kubectl delete configmap prefect-bootstrap -n "$NAMESPACE" 2>/dev/null || true
 kubectl create configmap prefect-bootstrap \
   --from-file=bootstrap_prefect-workflows.sh="$SCRIPT_DIR/bootstrap_prefect-workflows.sh" \
+  --from-file=register_automation.py="$SCRIPT_DIR/register_automation.py" \
   -n "$NAMESPACE"
 
 echo "==> Deleting old pod if exists..."

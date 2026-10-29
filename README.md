@@ -66,6 +66,13 @@ traffic; off-site users need the ZIB VPN. CKAN, the API server, the DOIP server 
 
 CKAN changes deploy the same way. The ApplicationSet excludes `apps/ckan/`, but its own Application (`infrastructure/argocd-apps/ckan-application.yaml`) also has `automated` sync with prune and self-heal. `argocd app sync ckan` only forces an immediate sync.
 
+A new image is not picked up by itself. The API server and the DOIP server run the `:latest` tag, which their CI overwrites on every push; the manifest does not change, so ArgoCD does nothing. Restart the pod to pull the new image:
+
+```bash
+kubectl -n default rollout restart deployment/episerve-api-server
+kubectl -n default rollout restart deployment/doip-server
+```
+
 ## Secrets
 
 Secrets are managed with [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets). The sealed secret files (`.yaml`) in each `apps/*/` directory are safe to commit. To rotate a secret, re-encrypt with `kubeseal` and commit the updated file.

@@ -108,7 +108,7 @@ echo "    2. Generate API token via CLI (not the CKAN UI — see Known Issues in
 echo "       kubectl exec -n ckan deployment/ckan -- ckan -c /app/production.ini user token add ckan_admin workflow"
 echo "    3. Seal token into apps/ckan/sealed-secret.yaml (ckansysadminapitoken) and"
 echo "       apps/prefect-secrets/ckan-sealed-secret.yaml (ckan-credentials), then commit and push"
-echo "    4. Create CKAN data model: org 'episerve', groups type-model/type-model-run/type-raw-data,"
+echo "    4. Create CKAN data model: org 'episerve', groups type-model/type-model-run/type-raw-data/type-benchmark-data,"
 echo "       vocabularies status/domain/modality — use the CKAN API with the sealed token"
 echo ""
 echo "==> Sysadmin password (store in Bitwarden now, it will not be shown again):"
