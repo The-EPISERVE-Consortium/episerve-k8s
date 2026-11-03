@@ -101,6 +101,24 @@ solr:
       tag: 3.9.3-debian-12-r22
   volumeClaimTemplates:
     storageSize: 8Gi
+  # The chart's default liveness probe checks /admin/info/system, which still passes after
+  # Solr loses its ZooKeeper session. Solr does not recover from an expired session by
+  # itself (seen 2026-11-02, when ZooKeeper restarted after Solr), so it sat unready for
+  # 22h. /api/node/health fails while ZooKeeper is disconnected. 5 minutes of failures
+  # (30s x 10) are allowed before a restart, so short ZooKeeper blips don't trigger one.
+  customLivenessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -ec
+        - |
+          export SOLR_ADMIN_PASSWORD="$(< $SOLR_ADMIN_PASSWORD_FILE)"
+          curl --silent --max-time 10 --user ${SOLR_ADMIN_USERNAME}:${SOLR_ADMIN_PASSWORD} http://localhost:${SOLR_PORT_NUMBER}/api/node/health | grep --quiet '"status":"OK"'
+    initialDelaySeconds: 120
+    periodSeconds: 30
+    timeoutSeconds: 15
+    failureThreshold: 10
+    successThreshold: 1
 
 postgresql:
   image:
