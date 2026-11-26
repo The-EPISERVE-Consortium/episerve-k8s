@@ -4,7 +4,7 @@ import sys
 import tempfile
 import time
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -35,10 +35,16 @@ def prefect_post(path, body):
         return deployments()
     ids = body["flow_runs"]["deployment_id"]["any_"]
     states = body["flow_runs"]["state"]["type"]["any_"]
+    # Times relative to the real clock, because main() judges lateness against now.
+    now = datetime.now(timezone.utc)
     if "SCHEDULED" in states:
-        return [{"expected_start_time": "2026-11-26T13:05:00Z"}]
-    return [{"start_time": "2026-11-26T11:30:00Z", "state_type": "COMPLETED",
+        return [{"expected_start_time": _iso(now + timedelta(minutes=30))}]
+    return [{"start_time": _iso(now - timedelta(minutes=30)), "state_type": "COMPLETED",
              "state": {"type": "COMPLETED"}}]
+
+
+def _iso(t):
+    return t.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class MainTest(unittest.TestCase):
@@ -64,9 +70,9 @@ class MainTest(unittest.TestCase):
         rc, _, data = self.run_main(src)
         self.assertEqual(rc, 0)
         keys = {k for k, *_ in collect.PUBLIC_SERVICES}
-        keys |= {w[0] for w in collect.WORKLOADS} | {"prefect.scheduler", "prefect.components"}
+        keys |= {w[0] for w in collect.WORKLOADS} | {"prefect.scheduler", "prefect.components", "prefect.flows"}
         self.assertEqual(set(data["items"]), keys)
-        self.assertEqual(len(data["items"]), 9)
+        self.assertEqual(len(data["items"]), 10)
         self.assertTrue(all(i["ok"] for i in data["items"].values()))
         self.assertEqual(len(data["flows"]), 2)
         self.assertEqual(data["alerts"], {"warning": 1, "critical": 0})
@@ -77,7 +83,7 @@ class MainTest(unittest.TestCase):
             previous_get=boom, check_url=boom)
         rc, text, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["items"]), 9)
+        self.assertEqual(len(data["items"]), 10)
         self.assertFalse(any(i["ok"] for i in data["items"].values()))
         self.assertIsNone(data["alerts"])
         self.assertEqual(data["flows"], [])
@@ -96,6 +102,22 @@ class MainTest(unittest.TestCase):
         self.assertEqual((comp["group"], comp["name"], comp["ok"]), ("prefect", "Components", False))
         self.assertTrue(data["items"]["prefect.scheduler"]["ok"])
 
+    def test_all_flows_item(self):
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=prefect_post, alerts_get=lambda: [],
+            previous_get=lambda: None, check_url=lambda u: True)
+        _, _, data = self.run_main(src)
+        f = data["items"]["prefect.flows"]
+        self.assertEqual((f["group"], f["name"]), ("prefect", "All flows"))
+        self.assertEqual(f["ok"], all(x["ok"] for x in data["flows"]) and bool(data["flows"]))
+
+    def test_all_flows_down_without_flows(self):
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=boom, alerts_get=lambda: [],
+            previous_get=lambda: None, check_url=lambda u: True)
+        _, _, data = self.run_main(src)
+        self.assertFalse(data["items"]["prefect.flows"]["ok"])
+
     def test_malformed_previous_starts_fresh(self):
         src = collect.Sources(
             k8s_get=ready, prefect_post=prefect_post,
@@ -103,7 +125,7 @@ class MainTest(unittest.TestCase):
             check_url=lambda u: True)
         rc, _, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["history"]), 9)
+        self.assertEqual(len(data["history"]), 10)
 
     def test_collect_flows_skips_paused_and_unscheduled(self):
         def post(path, body):

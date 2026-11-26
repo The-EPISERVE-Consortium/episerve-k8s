@@ -400,6 +400,11 @@ def main(env=os.environ, sources=None):
         "group": "prefect", "name": "Components",
         "ok": all(items[k]["ok"] for k in parts),
     }
+    # One item (own 30-day history) for the page's "All flows" row.
+    items["prefect.flows"] = {
+        "group": "prefect", "name": "All flows",
+        "ok": bool(flows) and all(f["ok"] for f in flows),
+    }
 
     try:
         alerts = count_alerts(src.alerts_get())
