@@ -86,6 +86,9 @@ class FlowEntryTests(unittest.TestCase):
     def test_scheduler_ok(self):
         self.assertTrue(collect.scheduler_ok([flow(), flow()]))
 
+    def test_scheduler_down_when_no_flows(self):
+        self.assertFalse(collect.scheduler_ok([]))
+
     def test_scheduler_down_when_any_flow_has_no_next_run(self):
         self.assertFalse(collect.scheduler_ok([flow(), flow(nxt=None)]))
 

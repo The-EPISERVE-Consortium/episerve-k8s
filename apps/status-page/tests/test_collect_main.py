@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from datetime import datetime, timezone
 
@@ -44,7 +45,13 @@ class MainTest(unittest.TestCase):
     def run_main(self, sources):
         with tempfile.TemporaryDirectory() as d:
             out = os.path.join(d, "status.json")
-            rc = collect.main({"OUTPUT": out}, sources)
+            old = collect.SLEEP
+            if collect.SLEEP is time.sleep:
+                collect.SLEEP = lambda s: None
+            try:
+                rc = collect.main({"OUTPUT": out}, sources)
+            finally:
+                collect.SLEEP = old
             with open(out) as f:
                 text = f.read()
         return rc, text, json.loads(text)
@@ -100,6 +107,92 @@ class MainTest(unittest.TestCase):
             return prefect_post(path, body)
         flows = collect.collect_flows(post, NOW)
         self.assertEqual([f["name"] for f in flows], ["ok"])
+
+    def failing_post(self, fail_ids):
+        def post(path, body):
+            if path != "/deployments/filter":
+                ids = body["flow_runs"]["deployment_id"]["any_"]
+                if ids[0] in fail_ids:
+                    raise OSError("secret-host:1234 refused")
+            return prefect_post(path, body)
+        return post
+
+    def test_next_run_query_filters_future(self):
+        bodies = []
+
+        def post(path, body):
+            bodies.append(body)
+            return prefect_post(path, body)
+        collect.collect_flows(post, NOW)
+        sched = [b for b in bodies if "flow_runs" in b
+                 and "SCHEDULED" in b["flow_runs"]["state"]["type"]["any_"]]
+        self.assertEqual(len(sched), 2)
+        for b in sched:
+            self.assertEqual(b["flow_runs"]["expected_start_time"],
+                             {"after_": "2026-11-26T12:00:00Z"})
+
+    def test_one_failed_runs_query_keeps_other_flows(self):
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=self.failing_post({"b"}),
+            alerts_get=lambda: [], previous_get=lambda: None,
+            check_url=lambda u: True)
+        rc, text, data = self.run_main(src)
+        flows = {f["name"]: f for f in data["flows"]}
+        self.assertEqual(set(flows), {"hourly", "daily"})
+        self.assertEqual(flows["hourly"]["last_state"], "ok")
+        self.assertIsNotNone(flows["hourly"]["next_run"])
+        bad = flows["daily"]
+        self.assertFalse(bad["ok"])
+        self.assertIsNone(bad["last_run"])
+        self.assertIsNone(bad["next_run"])
+        self.assertEqual(bad["last_state"], "none")
+        self.assertTrue(data["items"]["prefect.scheduler"]["ok"])
+        self.assertNotIn("secret-host", text)
+
+    def test_all_failed_runs_queries_scheduler_down(self):
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=self.failing_post({"a", "b"}),
+            alerts_get=lambda: [], previous_get=lambda: None,
+            check_url=lambda u: True)
+        rc, text, data = self.run_main(src)
+        self.assertEqual(len(data["flows"]), 2)
+        self.assertFalse(data["items"]["prefect.scheduler"]["ok"])
+
+    def test_previous_fetch_retried_once(self):
+        prev = {"schema": 1, "history": {"web.api": {"2026-11-20": [3, 4]}}}
+        calls = []
+
+        def previous():
+            calls.append(1)
+            if len(calls) == 1:
+                raise OSError("x")
+            return prev
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=prefect_post, alerts_get=lambda: [],
+            previous_get=previous, check_url=lambda u: True)
+        sleeps = []
+        old = collect.SLEEP
+        collect.SLEEP = sleeps.append
+        try:
+            rc, _, data = self.run_main(src)
+        finally:
+            collect.SLEEP = old
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(sleeps, [5])
+        self.assertEqual(data["history"]["web.api"]["2026-11-20"], [3, 4])
+
+    def test_previous_fetch_fails_twice_starts_empty(self):
+        src = collect.Sources(
+            k8s_get=ready, prefect_post=prefect_post, alerts_get=lambda: [],
+            previous_get=boom, check_url=lambda u: True)
+        old = collect.SLEEP
+        collect.SLEEP = lambda s: None
+        try:
+            rc, _, data = self.run_main(src)
+        finally:
+            collect.SLEEP = old
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(data["history"]["web.api"]), 1)
 
     def test_check_url_retries_once(self):
         calls = []

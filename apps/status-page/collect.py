@@ -89,7 +89,7 @@ def flow_entry(name, cron, last_run, last_state_type, next_run, now):
 
 
 def scheduler_ok(flows):
-    return all(f["next_run"] is not None for f in flows)
+    return bool(flows) and all(f["next_run"] is not None for f in flows)
 
 
 def count_alerts(alerts):
@@ -189,21 +189,33 @@ def _active_cron(dep):
     return None
 
 
-def collect_flows(post, now):
+def collect_flows(post, now, failed=None):
     flows = []
     for dep in post("/deployments/filter", {"limit": 200}):
         cron = _active_cron(dep)
         if cron is None or dep.get("paused") is not False:
             continue
         dep_id = {"any_": [dep["id"]]}
-        last = post("/flow_runs/filter", {
-            "flow_runs": {"deployment_id": dep_id,
-                          "state": {"type": {"any_": FINAL_TYPES}}},
-            "sort": "START_TIME_DESC", "limit": 1})
-        nxt = post("/flow_runs/filter", {
-            "flow_runs": {"deployment_id": dep_id,
-                          "state": {"type": {"any_": ["SCHEDULED"]}}},
-            "sort": "EXPECTED_START_TIME_ASC", "limit": 1})
+        try:
+            last = post("/flow_runs/filter", {
+                "flow_runs": {"deployment_id": dep_id,
+                              "state": {"type": {"any_": FINAL_TYPES}}},
+                "sort": "START_TIME_DESC", "limit": 1})
+            nxt = post("/flow_runs/filter", {
+                "flow_runs": {"deployment_id": dep_id,
+                              "state": {"type": {"any_": ["SCHEDULED"]}},
+                              "expected_start_time": {"after_": _iso(now)}},
+                "sort": "EXPECTED_START_TIME_ASC", "limit": 1})
+        except Exception as exc:
+            _log("prefect", exc)
+            if failed is not None:
+                failed.add(dep["name"])
+            flows.append({
+                "name": dep["name"],
+                "group": "downloads" if dep["name"].startswith("download__") else None,
+                "last_run": None, "last_state": "none",
+                "next_run": None, "ok": False})
+            continue
         last_run = last[0] if last else {}
         state_type = last_run.get("state_type") or (last_run.get("state") or {}).get("type")
         flows.append(flow_entry(
@@ -233,14 +245,15 @@ def default_sources(env):
         with open(f"{SA_DIR}/token") as f:
             token = f.read().strip()
         ctx = ssl.create_default_context(cafile=f"{SA_DIR}/ca.crt")
-        return http_json("GET", kube + path,
+        return http_json("GET", kube + path, timeout=5,
                          headers={"Authorization": f"Bearer {token}"}, context=ctx)
 
     return Sources(
         k8s_get=k8s_get,
-        prefect_post=lambda path, body: http_json("POST", prefect + path, body),
+        prefect_post=lambda path, body: http_json("POST", prefect + path, body, timeout=5),
         alerts_get=lambda: http_json(
-            "GET", am + "/api/v2/alerts?active=true&silenced=false&inhibited=false"),
+            "GET", am + "/api/v2/alerts?active=true&silenced=false&inhibited=false",
+            timeout=5),
         previous_get=lambda: http_json("GET", prev),
         check_url=check_url,
     )
@@ -260,8 +273,9 @@ def main(env=os.environ, sources=None):
     items.update(collect_workloads(src.k8s_get))
 
     try:
-        flows = collect_flows(src.prefect_post, now)
-        sched_ok = scheduler_ok(flows)
+        failed = set()
+        flows = collect_flows(src.prefect_post, now, failed)
+        sched_ok = scheduler_ok([f for f in flows if f["name"] not in failed])
     except Exception as exc:
         _log("prefect", exc)
         flows, sched_ok = [], False
@@ -273,11 +287,15 @@ def main(env=os.environ, sources=None):
         _log("alertmanager", exc)
         alerts = None
 
-    try:
-        previous = src.previous_get()
-    except Exception as exc:
-        _log("previous", exc)
-        previous = None
+    previous = None
+    for attempt in range(2):
+        try:
+            previous = src.previous_get()
+            break
+        except Exception as exc:
+            _log("previous", exc)
+            if attempt == 0:
+                SLEEP(5)
     try:
         status = build_status(now, items, flows, alerts, previous)
     except Exception as exc:
