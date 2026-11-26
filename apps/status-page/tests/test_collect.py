@@ -136,7 +136,7 @@ class BuildStatusTests(unittest.TestCase):
     def test_build_status_shape(self):
         s = collect.build_status(NOW, {"web.api": {"ok": True}}, [], None, None)
         self.assertEqual(set(s), {"schema", "generated_at", "alerts", "items",
-                                  "flows", "history"})
+                                  "flows", "history", "specs"})
         self.assertEqual(s["schema"], 1)
         self.assertTrue(s["generated_at"].endswith("Z"))
         self.assertIsNone(s["alerts"])

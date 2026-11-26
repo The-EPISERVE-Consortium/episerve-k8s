@@ -1,6 +1,7 @@
 """Hourly status collector for the EPISERVE status page (stdlib only)."""
 import json
 import os
+import re
 import ssl
 import sys
 import time
@@ -116,7 +117,7 @@ def merge_history(previous, items, today):
     return history
 
 
-def build_status(now, items, flows, alerts, previous):
+def build_status(now, items, flows, alerts, previous, specs=None):
     return {
         "schema": 1,
         "generated_at": _iso(now),
@@ -124,6 +125,7 @@ def build_status(now, items, flows, alerts, previous):
         "items": items,
         "flows": flows,
         "history": merge_history(previous, items, now.date()),
+        "specs": specs,
     }
 
 
@@ -224,6 +226,113 @@ def collect_flows(post, now, failed=None):
     return sorted(flows, key=lambda f: f["name"])
 
 
+SPECS = [("model-card", "model_card"), ("fdo", "fdo")]
+GITHUB_SPECS = "/repos/The-EPISERVE-Consortium/episerve_specs"
+_RELEASE_RE = re.compile(r"^(?:v|episerve-specs )?(\d+)\.(\d+)\.(\d+)$")
+_SCHEMA_RE = re.compile(r"^v(\d+)\.schema\.json$")
+
+
+def parse_release(text):
+    if not isinstance(text, str):
+        return None
+    m = _RELEASE_RE.match(text.strip())
+    return tuple(int(g) for g in m.groups()) if m else None
+
+
+def release_str(t):
+    return ".".join(str(n) for n in t)
+
+
+def latest_release(tag_names):
+    found = [parse_release(n) for n in tag_names
+             if isinstance(n, str) and n.startswith("v")]
+    found = [t for t in found if t]
+    return release_str(max(found)) if found else None
+
+
+def schema_versions(file_names):
+    nums = [int(m.group(1)) for n in file_names
+            if isinstance(n, str) and (m := _SCHEMA_RE.match(n))]
+    return [str(n) for n in sorted(nums)]
+
+
+def catalog_summary(packages):
+    releases, valid, warnings = set(), 0, 0
+    for pkg in packages:
+        raw = next((e.get("value") for e in pkg.get("extras") or []
+                    if e.get("key") == "model_card_validation"), None)
+        try:
+            val = json.loads(raw)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(val, dict):
+            continue
+        rel = parse_release(val.get("validator"))
+        if rel:
+            releases.add(rel)
+        if val.get("valid") is True:
+            valid += 1
+        issues = val.get("issues")
+        if isinstance(issues, list) and any(
+                isinstance(i, dict) and i.get("severity") == "warning" for i in issues):
+            warnings += 1
+    return {"releases": [release_str(t) for t in sorted(releases)],
+            "valid": valid, "total": len(packages), "warnings": warnings}
+
+
+def collect_specs(github_get, api_get, api_post, ckan_get):
+    latest = None
+    try:
+        tags = github_get(GITHUB_SPECS + "/tags?per_page=100")
+        latest = latest_release([t.get("name") for t in tags])
+    except Exception as exc:
+        _log("github", exc)
+    gh_versions = {}
+    if latest:
+        for spec, directory in SPECS:
+            try:
+                files = github_get(
+                    f"{GITHUB_SPECS}/contents/src/episerve_specs/specs/{directory}"
+                    f"?ref=v{latest}")
+                gh_versions[spec] = schema_versions([f.get("name") for f in files])
+            except Exception as exc:
+                _log("github", exc)
+
+    api_versions = None
+    try:
+        schemas = api_get("/schemas")
+        api_versions = {spec: [str(v) for v in (schemas.get(spec) or {}).get("versions")]
+                        for spec, _ in SPECS}
+    except Exception as exc:
+        _log("api", exc)
+    api_release = {}
+    for spec, _ in SPECS:
+        try:
+            rel = parse_release(api_post(f"/validate/{spec}", {}).get("validator"))
+            api_release[spec] = release_str(rel) if rel else None
+        except Exception as exc:
+            _log("api", exc)
+            api_release[spec] = None
+
+    catalog = None
+    try:
+        res = ckan_get("/api/3/action/package_search?fq=groups:type-model&rows=1000")
+        catalog = catalog_summary(res["result"]["results"])
+    except Exception as exc:
+        _log("catalog", exc)
+
+    rows = []
+    for spec, _ in SPECS:
+        github = ({"release": latest, "versions": gh_versions[spec]}
+                  if spec in gh_versions else None)
+        rel = api_release[spec]
+        api = ({"release": rel, "versions": api_versions[spec]}
+               if rel and api_versions else None)
+        rows.append({"spec": spec, "github": github, "api": api,
+                     "catalog": catalog if spec == "model-card" else {"recorded": False}})
+    return {"latest": latest, "rows": rows}
+
+
 @dataclass
 class Sources:
     k8s_get: Callable[[str], dict]
@@ -231,6 +340,10 @@ class Sources:
     alerts_get: Callable[[], list]
     previous_get: Callable[[], Optional[dict]]
     check_url: Callable[[str], bool]
+    github_get: Optional[Callable[[str], object]] = None
+    api_get: Optional[Callable[[str], object]] = None
+    api_post: Optional[Callable[[str, dict], object]] = None
+    ckan_get: Optional[Callable[[str], object]] = None
 
 
 def default_sources(env):
@@ -240,6 +353,12 @@ def default_sources(env):
                  "http://kube-prometheus-kube-prome-alertmanager.kube-prometheus.svc:9093")
     prev = env.get("PREVIOUS_URL",
                    "https://raw.githubusercontent.com/The-EPISERVE-Consortium/episerve-status/data/status.json")
+
+    github = env.get("GITHUB_API_URL", "https://api.github.com")
+    api = env.get("EPISERVE_API_URL", "https://api.episerve.zib.de")
+    ckan = env.get("CKAN_URL", "https://data.episerve.zib.de")
+    gh_headers = {"User-Agent": "episerve-status-page",
+                  "Accept": "application/vnd.github+json"}
 
     def k8s_get(path):
         with open(f"{SA_DIR}/token") as f:
@@ -256,6 +375,11 @@ def default_sources(env):
             timeout=5),
         previous_get=lambda: http_json("GET", prev),
         check_url=check_url,
+        github_get=lambda path: http_json("GET", github + path, headers=gh_headers,
+                                          timeout=5),
+        api_get=lambda path: http_json("GET", api + path, timeout=5),
+        api_post=lambda path, body=None: http_json("POST", api + path, body, timeout=5),
+        ckan_get=lambda path: http_json("GET", ckan + path, timeout=5),
     )
 
 
@@ -296,11 +420,17 @@ def main(env=os.environ, sources=None):
             _log("previous", exc)
             if attempt == 0:
                 SLEEP(5)
+    specs = None
+    if src.github_get and src.api_get and src.api_post and src.ckan_get:
+        try:
+            specs = collect_specs(src.github_get, src.api_get, src.api_post, src.ckan_get)
+        except Exception as exc:
+            _log("specs", exc)
     try:
-        status = build_status(now, items, flows, alerts, previous)
+        status = build_status(now, items, flows, alerts, previous, specs)
     except Exception as exc:
         _log("history", exc)
-        status = build_status(now, items, flows, alerts, None)
+        status = build_status(now, items, flows, alerts, None, specs)
 
     try:
         with open(env.get("OUTPUT", "/work/status.json"), "w") as f:
