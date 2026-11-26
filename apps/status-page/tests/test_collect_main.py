@@ -64,9 +64,9 @@ class MainTest(unittest.TestCase):
         rc, _, data = self.run_main(src)
         self.assertEqual(rc, 0)
         keys = {k for k, *_ in collect.PUBLIC_SERVICES}
-        keys |= {w[0] for w in collect.WORKLOADS} | {"prefect.scheduler"}
+        keys |= {w[0] for w in collect.WORKLOADS} | {"prefect.scheduler", "prefect.components"}
         self.assertEqual(set(data["items"]), keys)
-        self.assertEqual(len(data["items"]), 8)
+        self.assertEqual(len(data["items"]), 9)
         self.assertTrue(all(i["ok"] for i in data["items"].values()))
         self.assertEqual(len(data["flows"]), 2)
         self.assertEqual(data["alerts"], {"warning": 1, "critical": 0})
@@ -77,11 +77,24 @@ class MainTest(unittest.TestCase):
             previous_get=boom, check_url=boom)
         rc, text, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["items"]), 8)
+        self.assertEqual(len(data["items"]), 9)
         self.assertFalse(any(i["ok"] for i in data["items"].values()))
         self.assertIsNone(data["alerts"])
         self.assertEqual(data["flows"], [])
         self.assertNotIn("secret-host", text)
+
+    def test_components_down_when_one_workload_is_down(self):
+        def k8s(path):
+            if path.endswith("/prefect-worker"):
+                return {"spec": {"replicas": 1}, "status": {"readyReplicas": 0}}
+            return ready(path)
+        src = collect.Sources(
+            k8s_get=k8s, prefect_post=prefect_post, alerts_get=lambda: [],
+            previous_get=lambda: None, check_url=lambda u: True)
+        _, _, data = self.run_main(src)
+        comp = data["items"]["prefect.components"]
+        self.assertEqual((comp["group"], comp["name"], comp["ok"]), ("prefect", "Components", False))
+        self.assertTrue(data["items"]["prefect.scheduler"]["ok"])
 
     def test_malformed_previous_starts_fresh(self):
         src = collect.Sources(
@@ -90,7 +103,7 @@ class MainTest(unittest.TestCase):
             check_url=lambda u: True)
         rc, _, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["history"]), 8)
+        self.assertEqual(len(data["history"]), 9)
 
     def test_collect_flows_skips_paused_and_unscheduled(self):
         def post(path, body):

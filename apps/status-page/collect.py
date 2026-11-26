@@ -394,6 +394,12 @@ def main(env=os.environ, sources=None):
         _log("prefect", exc)
         flows, sched_ok = [], False
     items["prefect.scheduler"] = {"group": "prefect", "name": "Scheduler", "ok": sched_ok}
+    # One combined item (own 30-day history) for the page's "Components" row.
+    parts = [w[0] for w in WORKLOADS] + ["prefect.scheduler"]
+    items["prefect.components"] = {
+        "group": "prefect", "name": "Components",
+        "ok": all(items[k]["ok"] for k in parts),
+    }
 
     try:
         alerts = count_alerts(src.alerts_get())
