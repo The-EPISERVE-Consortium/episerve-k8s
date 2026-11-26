@@ -1,0 +1,73 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: status-page
+  namespace: default
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          serviceAccountName: status-page
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            fsGroup: 65534
+          initContainers:
+            - name: collect
+              image: python:3.12.16-alpine
+              command: ["python3", "/scripts/collect.py"]
+              env:
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - {name: work, mountPath: /work}
+                - {name: tmp, mountPath: /tmp}
+                - {name: scripts, mountPath: /scripts, readOnly: true}
+          containers:
+            - name: push
+              image: alpine/git:2.54.1
+              command: ["sh", "/scripts/push.sh"]
+              env:
+                - name: SSH_KEY_SOURCE
+                  value: /ssh/id_ed25519
+                - name: HOME
+                  value: /tmp
+                - name: WORK_DIR
+                  value: /work/git
+                - name: GIT_SSH_COMMAND
+                  value: "ssh -i /tmp/.ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/ssh/known_hosts -o StrictHostKeyChecking=yes -p 443"
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - {name: work, mountPath: /work}
+                - {name: tmp, mountPath: /tmp}
+                - {name: scripts, mountPath: /scripts, readOnly: true}
+                - {name: ssh, mountPath: /ssh, readOnly: true}
+          volumes:
+            - name: work
+              emptyDir: {}
+            - name: tmp
+              emptyDir: {}
+            - name: scripts
+              configMap:
+                name: status-page-scripts
+            - name: ssh
+              secret:
+                secretName: status-page-deploy-key
+                defaultMode: 0440
