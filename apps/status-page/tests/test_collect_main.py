@@ -66,7 +66,7 @@ class MainTest(unittest.TestCase):
         keys = {k for k, *_ in collect.PUBLIC_SERVICES}
         keys |= {w[0] for w in collect.WORKLOADS} | {"prefect.scheduler"}
         self.assertEqual(set(data["items"]), keys)
-        self.assertEqual(len(data["items"]), 18)
+        self.assertEqual(len(data["items"]), 8)
         self.assertTrue(all(i["ok"] for i in data["items"].values()))
         self.assertEqual(len(data["flows"]), 2)
         self.assertEqual(data["alerts"], {"warning": 1, "critical": 0})
@@ -77,7 +77,7 @@ class MainTest(unittest.TestCase):
             previous_get=boom, check_url=boom)
         rc, text, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["items"]), 18)
+        self.assertEqual(len(data["items"]), 8)
         self.assertFalse(any(i["ok"] for i in data["items"].values()))
         self.assertIsNone(data["alerts"])
         self.assertEqual(data["flows"], [])
@@ -90,7 +90,7 @@ class MainTest(unittest.TestCase):
             check_url=lambda u: True)
         rc, _, data = self.run_main(src)
         self.assertEqual(rc, 0)
-        self.assertEqual(len(data["history"]), 18)
+        self.assertEqual(len(data["history"]), 8)
 
     def test_collect_flows_skips_paused_and_unscheduled(self):
         def post(path, body):

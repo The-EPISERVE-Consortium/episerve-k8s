@@ -145,3 +145,10 @@ class BuildStatusTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNoPodItems(unittest.TestCase):
+    def test_only_workflow_server_workloads_are_checked(self):
+        self.assertEqual([w[0] for w in collect.WORKLOADS],
+                         ["prefect.server", "prefect.worker", "prefect.database"])
+        self.assertTrue(all(w[3] == "default" for w in collect.WORKLOADS))

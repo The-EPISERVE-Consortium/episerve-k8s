@@ -23,16 +23,6 @@ WORKLOADS = [
     ("prefect.server", "prefect", "Server", "default", "deployments", "prefect-server"),
     ("prefect.worker", "prefect", "Worker", "default", "deployments", "prefect-worker"),
     ("prefect.database", "prefect", "Database", "default", "statefulsets", "prefect-postgresql"),
-    ("pods.api", "pods", "API server", "default", "deployments", "episerve-api-server"),
-    ("pods.doip", "pods", "DOIP server", "default", "deployments", "doip-server"),
-    ("pods.ckan", "pods", "CKAN", "ckan", "deployments", "ckan"),
-    ("pods.ckan_worker_default", "pods", "CKAN worker (default)", "ckan", "deployments", "ckan-worker-default"),
-    ("pods.ckan_worker_priority", "pods", "CKAN worker (priority)", "ckan", "deployments", "ckan-worker-priority"),
-    ("pods.ckan_worker_bulk", "pods", "CKAN worker (bulk)", "ckan", "deployments", "ckan-worker-bulk"),
-    ("pods.solr", "pods", "Solr", "ckan", "statefulsets", "solr"),
-    ("pods.ckan_db", "pods", "CKAN database", "ckan", "statefulsets", "postgres"),
-    ("pods.redis", "pods", "Redis", "ckan", "statefulsets", "redis-master"),
-    ("pods.mariadb", "pods", "MariaDB", "default", "statefulsets", "mariadb"),
 ]
 
 ISO = "%Y-%m-%dT%H:%M:%SZ"
