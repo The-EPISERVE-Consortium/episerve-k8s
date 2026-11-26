@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
 PUBLIC_SERVICES = [
-    ("web.website", "EPISERVE website", "https://episerve.zib.de/"),
+    ("web.website", "Project Website", "https://episerve.zib.de/"),
     ("web.datahub", "Data hub", "https://data.episerve.zib.de/"),
     ("web.api", "API server", "https://api.episerve.zib.de/health"),
     ("web.doip", "DOIP server", "https://doip.episerve.zib.de/"),
