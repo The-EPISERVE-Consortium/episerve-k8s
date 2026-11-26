@@ -4,14 +4,16 @@ metadata:
   name: status-page
   namespace: default
 spec:
-  schedule: "0 * * * *"
+  schedule: "5 * * * *"
+  startingDeadlineSeconds: 600
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      backoffLimit: 0
-      activeDeadlineSeconds: 600
+      backoffLimit: 1
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 86400
       template:
         spec:
           serviceAccountName: status-page
@@ -27,6 +29,9 @@ spec:
               env:
                 - name: PYTHONDONTWRITEBYTECODE
                   value: "1"
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {cpu: 200m, memory: 128Mi}
               securityContext:
                 readOnlyRootFilesystem: true
                 allowPrivilegeEscalation: false
@@ -49,6 +54,9 @@ spec:
                   value: /work/git
                 - name: GIT_SSH_COMMAND
                   value: "ssh -i /tmp/.ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/ssh/known_hosts -o StrictHostKeyChecking=yes -p 443"
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {cpu: 200m, memory: 128Mi}
               securityContext:
                 readOnlyRootFilesystem: true
                 allowPrivilegeEscalation: false
