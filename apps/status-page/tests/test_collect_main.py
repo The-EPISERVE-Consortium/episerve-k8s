@@ -4,6 +4,7 @@ import sys
 import tempfile
 import time
 import unittest
+import urllib.error
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -80,7 +81,7 @@ class MainTest(unittest.TestCase):
     def test_main_survives_failing_sources(self):
         src = collect.Sources(
             k8s_get=boom, prefect_post=boom, alerts_get=boom,
-            previous_get=boom, check_url=boom)
+            previous_get=lambda: None, check_url=boom, check_doip=boom)
         rc, text, data = self.run_main(src)
         self.assertEqual(rc, 0)
         self.assertEqual(len(data["items"]), 10)
@@ -216,18 +217,79 @@ class MainTest(unittest.TestCase):
         self.assertEqual(sleeps, [5])
         self.assertEqual(data["history"]["web.api"]["2026-11-20"], [3, 4])
 
-    def test_previous_fetch_fails_twice_starts_empty(self):
+    def run_previous(self, previous):
         src = collect.Sources(
             k8s_get=ready, prefect_post=prefect_post, alerts_get=lambda: [],
-            previous_get=boom, check_url=lambda u: True)
+            previous_get=previous, check_url=lambda u: True)
         old = collect.SLEEP
         collect.SLEEP = lambda s: None
         try:
-            rc, _, data = self.run_main(src)
+            with tempfile.TemporaryDirectory() as d:
+                out = os.path.join(d, "status.json")
+                rc = collect.main({"OUTPUT": out}, src)
+                data = None
+                if os.path.exists(out):
+                    with open(out) as f:
+                        data = json.load(f)
         finally:
             collect.SLEEP = old
+        return rc, data
+
+    def test_previous_unreadable_fails_without_output(self):
+        for error in (OSError("x"), ValueError("bad json"),
+                      urllib.error.HTTPError("u", 503, "down", None, None)):
+            calls = []
+
+            def previous():
+                calls.append(1)
+                raise error
+            self.assertEqual(self.run_previous(previous), (1, None))
+            self.assertEqual(len(calls), 3)
+
+    def test_previous_not_found_starts_empty(self):
+        calls = []
+
+        def previous():
+            calls.append(1)
+            raise urllib.error.HTTPError("u", 404, "Not Found", None, None)
+        rc, data = self.run_previous(previous)
         self.assertEqual(rc, 0)
+        self.assertEqual(len(calls), 1)
         self.assertEqual(len(data["history"]["web.api"]), 1)
+
+    def test_doip_item_needs_http_and_tcp(self):
+        for http, tcp, expected in ((True, True, True), (True, False, False),
+                                    (False, True, False)):
+            seen = []
+
+            def doip(host, port):
+                seen.append((host, port))
+                return tcp
+            src = collect.Sources(
+                k8s_get=ready, prefect_post=prefect_post, alerts_get=lambda: [],
+                previous_get=lambda: None, check_doip=doip,
+                check_url=lambda u: http or "doip" not in u)
+            _, _, data = self.run_main(src)
+            self.assertEqual(data["items"]["web.doip"]["ok"], expected)
+            self.assertTrue(data["items"]["web.api"]["ok"])
+            self.assertEqual(seen, [("doip.episerve.zib.de", 3567)])
+
+    def test_check_doip_retries_once(self):
+        calls = []
+
+        def hello(host, port):
+            calls.append(1)
+            if len(calls) == 1:
+                raise OSError("x")
+            return True
+        old = collect.SLEEP
+        collect.SLEEP = lambda s: None
+        try:
+            self.assertTrue(collect.check_doip("h", 1, hello))
+            self.assertFalse(collect.check_doip("h", 1, lambda h, p: False))
+        finally:
+            collect.SLEEP = old
+        self.assertEqual(len(calls), 2)
 
     def test_check_url_retries_once(self):
         calls = []

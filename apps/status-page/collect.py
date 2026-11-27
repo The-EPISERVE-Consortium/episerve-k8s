@@ -2,7 +2,9 @@
 import json
 import os
 import re
+import socket
 import ssl
+import struct
 import sys
 import time
 import urllib.error
@@ -17,6 +19,12 @@ PUBLIC_SERVICES = [
     ("web.api", "API server", "https://api.episerve.zib.de/health"),
     ("web.doip", "DOIP server", "https://doip.episerve.zib.de/"),
 ]
+
+# Services that must also answer on their DOIP TCP port: key -> (host, port).
+DOIP_ENDPOINTS = {"web.doip": ("doip.episerve.zib.de", 3567)}
+# DOIP header: version, message type, operation, flags, object id length, payload length.
+DOIP_HEADER = struct.Struct(">BBBBHI")
+DOIP_VERSION, DOIP_REQUEST, DOIP_RESPONSE, DOIP_HELLO = 0x02, 0x01, 0x02, 0x01
 
 # (key, group, name, namespace, kind, workload)
 WORKLOADS = [
@@ -146,6 +154,34 @@ def check_url(url, opener=urllib.request.urlopen):
                 return True
         except Exception:
             pass
+        if attempt == 0:
+            SLEEP(5)
+    return False
+
+
+def doip_hello(host, port, timeout=10):
+    """Send a DOIP hello over TLS; True when the server answers it with a response."""
+    context = ssl.create_default_context()
+    with socket.create_connection((host, port), timeout=timeout) as raw:
+        with context.wrap_socket(raw, server_hostname=host) as conn:
+            conn.sendall(DOIP_HEADER.pack(DOIP_VERSION, DOIP_REQUEST, DOIP_HELLO, 0, 0, 0))
+            reply = b""
+            while len(reply) < DOIP_HEADER.size:
+                chunk = conn.recv(DOIP_HEADER.size - len(reply))
+                if not chunk:
+                    return False
+                reply += chunk
+    version, msg_type, operation = DOIP_HEADER.unpack(reply)[:3]
+    return (version, msg_type, operation) == (DOIP_VERSION, DOIP_RESPONSE, DOIP_HELLO)
+
+
+def check_doip(host, port, hello=doip_hello):
+    for attempt in range(2):
+        try:
+            if hello(host, port):
+                return True
+        except Exception as exc:
+            _log("doip", exc)
         if attempt == 0:
             SLEEP(5)
     return False
@@ -334,6 +370,7 @@ class Sources:
     api_get: Optional[Callable[[str], object]] = None
     api_post: Optional[Callable[[str, dict], object]] = None
     ckan_get: Optional[Callable[[str], object]] = None
+    check_doip: Optional[Callable[[str, int], bool]] = None
 
 
 def default_sources(env):
@@ -365,12 +402,30 @@ def default_sources(env):
             timeout=5),
         previous_get=lambda: http_json("GET", prev),
         check_url=check_url,
+        check_doip=check_doip,
         github_get=lambda path: http_json("GET", github + path, headers=gh_headers,
                                           timeout=5),
         api_get=lambda path: http_json("GET", api + path, timeout=5),
         api_post=lambda path, body=None: http_json("POST", api + path, body, timeout=5),
         ckan_get=lambda path: http_json("GET", ckan + path, timeout=5),
     )
+
+
+def fetch_previous(get, attempts=3):
+    """The last published status, or None if there is none yet (HTTP 404).
+
+    Raises when it cannot be read.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            return get()
+        except Exception as exc:
+            if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:
+                return None
+            _log("previous", exc)
+            if attempt == attempts:
+                raise
+            SLEEP(5)
 
 
 def main(env=os.environ, sources=None):
@@ -383,6 +438,13 @@ def main(env=os.environ, sources=None):
         except Exception as exc:
             _log(f"web {key}", exc)
             ok = False
+        if key in DOIP_ENDPOINTS and src.check_doip:
+            try:
+                tcp_ok = bool(src.check_doip(*DOIP_ENDPOINTS[key]))
+            except Exception as exc:
+                _log(f"doip {key}", exc)
+                tcp_ok = False
+            ok = ok and tcp_ok
         items[key] = {"group": "public", "name": name, "ok": ok}
     items.update(collect_workloads(src.k8s_get))
 
@@ -412,15 +474,12 @@ def main(env=os.environ, sources=None):
         _log("alertmanager", exc)
         alerts = None
 
-    previous = None
-    for attempt in range(2):
-        try:
-            previous = src.previous_get()
-            break
-        except Exception as exc:
-            _log("previous", exc)
-            if attempt == 0:
-                SLEEP(5)
+    try:
+        previous = fetch_previous(src.previous_get)
+    except Exception:
+        # Publishing now would overwrite the stored history; keep the old file instead.
+        print("previous status unavailable, nothing written", file=sys.stderr)
+        return 1
     specs = None
     if src.github_get and src.api_get and src.api_post and src.ckan_get:
         try:
